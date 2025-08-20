@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/use-toast';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Mail } from 'lucide-react';
 import { Profile } from '@/types';
 
 const specialties = ["Consulta General", "Odontología", "Cardiología"];
@@ -22,8 +22,7 @@ const DoctoresPage = () => {
   const [formData, setFormData] = useState({
     full_name: '',
     specialty: '',
-    email: '',
-    password: ''
+    email: ''
   });
 
   useEffect(() => {
@@ -67,41 +66,14 @@ const DoctoresPage = () => {
         resetForm();
       }
     } else {
-      // Crear nuevo doctor
-      if (!formData.email || !formData.password) {
-        toast({ title: 'Error', description: 'Email y contraseña son requeridos para crear un nuevo doctor.', variant: 'destructive' });
-        return;
-      }
-
-      // Crear usuario en auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: formData.email,
-        password: formData.password,
-        email_confirm: true
+      // Para crear un nuevo doctor, solo guardamos la información
+      // El doctor deberá registrarse por sí mismo usando el formulario de registro
+      toast({ 
+        title: 'Información', 
+        description: `Para agregar un nuevo doctor, envía las credenciales de acceso a ${formData.email} para que se registre en el sistema.`,
+        duration: 5000
       });
-
-      if (authError) {
-        toast({ title: 'Error', description: 'No se pudo crear el usuario: ' + authError.message, variant: 'destructive' });
-        return;
-      }
-
-      // Crear perfil
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: authData.user.id,
-          full_name: formData.full_name,
-          specialty: formData.specialty,
-          role: 'doctor'
-        });
-
-      if (profileError) {
-        toast({ title: 'Error', description: 'No se pudo crear el perfil del doctor.', variant: 'destructive' });
-      } else {
-        toast({ title: 'Éxito', description: 'Doctor creado correctamente.' });
-        fetchDoctors();
-        resetForm();
-      }
+      resetForm();
     }
   };
 
@@ -110,8 +82,7 @@ const DoctoresPage = () => {
     setFormData({
       full_name: doctor.full_name || '',
       specialty: doctor.specialty || '',
-      email: '',
-      password: ''
+      email: ''
     });
     setIsDialogOpen(true);
   };
@@ -119,7 +90,11 @@ const DoctoresPage = () => {
   const handleDelete = async (doctorId: string) => {
     if (!confirm('¿Estás seguro de que quieres eliminar este doctor?')) return;
 
-    const { error } = await supabase.auth.admin.deleteUser(doctorId);
+    // Solo eliminar el perfil, no el usuario de auth
+    const { error } = await supabase
+      .from('profiles')
+      .delete()
+      .eq('id', doctorId);
 
     if (error) {
       toast({ title: 'Error', description: 'No se pudo eliminar el doctor.', variant: 'destructive' });
@@ -130,7 +105,7 @@ const DoctoresPage = () => {
   };
 
   const resetForm = () => {
-    setFormData({ full_name: '', specialty: '', email: '', password: '' });
+    setFormData({ full_name: '', specialty: '', email: '' });
     setEditingDoctor(null);
     setIsDialogOpen(false);
   };
@@ -142,18 +117,23 @@ const DoctoresPage = () => {
   return (
     <div className="p-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Gestión de Doctores</h1>
+        <div>
+          <h1 className="text-3xl font-bold">Gestión de Doctores</h1>
+          <p className="text-muted-foreground mt-2">
+            Los doctores deben registrarse por sí mismos. Aquí puedes editar sus especialidades.
+          </p>
+        </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => resetForm()}>
               <Plus className="h-4 w-4 mr-2" />
-              Nuevo Doctor
+              Invitar Doctor
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
-                {editingDoctor ? 'Editar Doctor' : 'Nuevo Doctor'}
+                {editingDoctor ? 'Editar Doctor' : 'Invitar Nuevo Doctor'}
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -182,35 +162,24 @@ const DoctoresPage = () => {
                 </Select>
               </div>
               {!editingDoctor && (
-                <>
-                  <div>
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="password">Contraseña</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      required
-                    />
-                  </div>
-                </>
+                <div>
+                  <Label htmlFor="email">Email del Doctor</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="Para enviar instrucciones de registro"
+                    required
+                  />
+                </div>
               )}
               <div className="flex justify-end space-x-2">
                 <Button type="button" variant="outline" onClick={resetForm}>
                   Cancelar
                 </Button>
                 <Button type="submit">
-                  {editingDoctor ? 'Actualizar' : 'Crear'}
+                  {editingDoctor ? 'Actualizar' : 'Enviar Invitación'}
                 </Button>
               </div>
             </form>
@@ -218,44 +187,83 @@ const DoctoresPage = () => {
         </Dialog>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Lista de Doctores</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nombre</TableHead>
-                <TableHead>Especialidad</TableHead>
-                <TableHead>Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {doctors.map((doctor) => (
-                <TableRow key={doctor.id}>
-                  <TableCell className="font-medium">{doctor.full_name}</TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">
-                      {doctor.specialty || 'Sin especialidad'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button size="sm" variant="outline" onClick={() => handleEdit(doctor)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button size="sm" variant="destructive" onClick={() => handleDelete(doctor.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+      <div className="grid gap-6">
+        {/* Instrucciones para registro */}
+        <Card className="bg-blue-50 border-blue-200">
+          <CardHeader>
+            <CardTitle className="flex items-center text-blue-800">
+              <Mail className="h-5 w-5 mr-2" />
+              Instrucciones para Nuevos Doctores
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-blue-700">
+            <p className="mb-2">Para que un doctor se una al sistema:</p>
+            <ol className="list-decimal list-inside space-y-1 text-sm">
+              <li>El doctor debe ir a <strong>/admin/login</strong></li>
+              <li>Hacer clic en "Sign up" para crear una cuenta</li>
+              <li>Usar su email profesional y crear una contraseña</li>
+              <li>Una vez registrado, aparecerá en esta lista</li>
+              <li>Tú puedes editar su especialidad desde aquí</li>
+            </ol>
+          </CardContent>
+        </Card>
+
+        {/* Lista de doctores */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Lista de Doctores Registrados</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nombre</TableHead>
+                  <TableHead>Especialidad</TableHead>
+                  <TableHead>Fecha de Registro</TableHead>
+                  <TableHead>Acciones</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+              </TableHeader>
+              <TableBody>
+                {doctors.length > 0 ? (
+                  doctors.map((doctor) => (
+                    <TableRow key={doctor.id}>
+                      <TableCell className="font-medium">{doctor.full_name}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">
+                          {doctor.specialty || 'Sin especialidad'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {doctor.updated_at ? new Date(doctor.updated_at).toLocaleDateString() : 'N/A'}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          <Button size="sm" variant="outline" onClick={() => handleEdit(doctor)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button size="sm" variant="destructive" onClick={() => handleDelete(doctor.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-8">
+                      <div className="text-muted-foreground">
+                        <Mail className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>No hay doctores registrados aún.</p>
+                        <p className="text-sm">Invita a los doctores a registrarse en el sistema.</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
