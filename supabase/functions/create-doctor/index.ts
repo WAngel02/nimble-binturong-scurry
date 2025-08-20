@@ -12,7 +12,6 @@ serve(async (req) => {
   }
 
   try {
-    // Crear cliente de Supabase con service role key
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -24,157 +23,65 @@ serve(async (req) => {
       }
     )
 
-    // Verificar que el usuario que hace la petición es admin
     const authHeader = req.headers.get('Authorization')!
     const token = authHeader.replace('Bearer ', '')
     
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
     if (authError || !user) {
-      return new Response(
-        JSON.stringify({ error: 'No autorizado' }),
-        { 
-          status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
+      return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    // Verificar que el usuario es admin
-    const { data: profile } = await supabaseAdmin
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
+    const { data: profile } = await supabaseAdmin.from('profiles').select('role').eq('id', user.id).single()
     if (profile?.role !== 'admin') {
-      return new Response(
-        JSON.stringify({ error: 'Solo los administradores pueden crear doctores' }),
-        { 
-          status: 403, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
+      return new Response(JSON.stringify({ error: 'Solo los administradores pueden crear doctores' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    // Obtener datos del cuerpo de la petición
-    const { email, password, full_name, specialty } = await req.json()
+    const { email, password, full_name, specialty, phone, address } = await req.json()
 
     if (!email || !password || !full_name) {
-      return new Response(
-        JSON.stringify({ error: 'Email, contraseña y nombre son requeridos' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
+      return new Response(JSON.stringify({ error: 'Email, contraseña y nombre son requeridos' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    // Crear usuario en auth con metadata que incluye el rol
     const { data: authData, error: authCreateError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
-      user_metadata: {
-        full_name,
-        role: 'doctor'
-      }
+      user_metadata: { full_name, role: 'doctor' }
     })
 
     if (authCreateError) {
-      console.error('Error creating user:', authCreateError)
-      return new Response(
-        JSON.stringify({ error: 'Error al crear usuario: ' + authCreateError.message }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
+      return new Response(JSON.stringify({ error: 'Error al crear usuario: ' + authCreateError.message }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    // Esperar un poco para que el trigger automático se ejecute
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Verificar si el perfil ya existe (creado por el trigger)
-    const { data: existingProfile } = await supabaseAdmin
-      .from('profiles')
-      .select('*')
-      .eq('id', authData.user.id)
-      .single()
+    const profileData = {
+      full_name,
+      specialty: specialty || null,
+      role: 'doctor',
+      phone: phone || null,
+      address: address || null
+    };
+
+    const { data: existingProfile } = await supabaseAdmin.from('profiles').select('*').eq('id', authData.user.id).single()
 
     if (existingProfile) {
-      // Si existe, actualizarlo con la especialidad
-      const { error: updateError } = await supabaseAdmin
-        .from('profiles')
-        .update({
-          full_name,
-          specialty: specialty || null,
-          role: 'doctor'
-        })
-        .eq('id', authData.user.id)
-
+      const { error: updateError } = await supabaseAdmin.from('profiles').update(profileData).eq('id', authData.user.id)
       if (updateError) {
-        console.error('Error updating profile:', updateError)
-        // Si falla la actualización, eliminar el usuario de auth
         await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
-        
-        return new Response(
-          JSON.stringify({ error: 'Error al actualizar perfil del doctor: ' + updateError.message }),
-          { 
-            status: 400, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        )
+        return new Response(JSON.stringify({ error: 'Error al actualizar perfil del doctor: ' + updateError.message }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
       }
     } else {
-      // Si no existe, crearlo manualmente
-      const { error: profileError } = await supabaseAdmin
-        .from('profiles')
-        .insert({
-          id: authData.user.id,
-          full_name,
-          specialty: specialty || null,
-          role: 'doctor'
-        })
-
+      const { error: profileError } = await supabaseAdmin.from('profiles').insert({ id: authData.user.id, ...profileData })
       if (profileError) {
-        console.error('Error creating profile:', profileError)
-        // Si falla la creación del perfil, eliminar el usuario de auth
         await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
-        
-        return new Response(
-          JSON.stringify({ error: 'Error al crear perfil del doctor: ' + profileError.message }),
-          { 
-            status: 400, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        )
+        return new Response(JSON.stringify({ error: 'Error al crear perfil del doctor: ' + profileError.message }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
       }
     }
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        doctor: {
-          id: authData.user.id,
-          email: authData.user.email,
-          full_name,
-          specialty
-        }
-      }),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    )
+    return new Response(JSON.stringify({ success: true, doctor: { id: authData.user.id, email: authData.user.email, ...profileData } }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
   } catch (error) {
-    console.error('Unexpected error:', error)
-    return new Response(
-      JSON.stringify({ error: 'Error interno del servidor: ' + error.message }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    )
+    return new Response(JSON.stringify({ error: 'Error interno del servidor: ' + error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
   }
 })

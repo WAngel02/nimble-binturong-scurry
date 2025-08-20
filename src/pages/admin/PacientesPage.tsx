@@ -8,10 +8,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/use-toast';
 import { Plus, Edit, Trash2, Eye } from 'lucide-react';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
 import { Patient } from '@/types';
 import { Link, useSearchParams } from 'react-router-dom';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
 const PacientesPage = () => {
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -169,7 +170,18 @@ const PacientesPage = () => {
                 </div>
                 <div>
                   <Label htmlFor="blood_type">Tipo de Sangre</Label>
-                  <Input id="blood_type" value={formData.blood_type} onChange={(e) => setFormData({ ...formData, blood_type: e.target.value })} />
+                  <Select value={formData.blood_type} onValueChange={(value) => setFormData({ ...formData, blood_type: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona un tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {bloodTypes.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div>

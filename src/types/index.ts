@@ -18,6 +18,9 @@ export interface Profile {
   role: 'admin' | 'doctor';
   updated_at: string;
   specialty?: string;
+  phone?: string;
+  address?: string;
+  email?: string;
 }
 
 export interface Patient {
