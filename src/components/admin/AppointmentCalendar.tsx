@@ -7,6 +7,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import AppointmentDetailsModal from './AppointmentDetailsModal';
 
+// Importar los estilos de FullCalendar directamente
+import '@fullcalendar/core/main.css';
+import '@fullcalendar/daygrid/main.css';
+import '@fullcalendar/timegrid/main.css';
+
 const DOCTOR_COLORS = ['#4A90E2', '#50E3C2', '#F5A623', '#F8E71C', '#D0021B', '#9013FE', '#7ED321', '#BD10E0'];
 
 const AppointmentCalendar = () => {
