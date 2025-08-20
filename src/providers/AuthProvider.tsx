@@ -27,16 +27,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       setSession(session);
       if (session) {
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-        
-        if (profileError) {
-          console.error('Error fetching profile:', profileError);
-        } else {
-          setProfile(profileData as Profile);
+        try {
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .maybeSingle(); // Usar maybeSingle() en lugar de single() para evitar errores cuando no hay resultados
+          
+          if (profileError) {
+            console.error('Error fetching profile:', profileError);
+          } else if (profileData) {
+            setProfile(profileData as Profile);
+          } else {
+            // Si no existe el perfil, crear uno básico
+            console.log('No profile found, creating one...');
+            const { data: newProfile, error: createError } = await supabase
+              .from('profiles')
+              .insert({
+                id: session.user.id,
+                full_name: session.user.email || 'Usuario',
+                role: 'doctor' // rol por defecto
+              })
+              .select()
+              .single();
+            
+            if (createError) {
+              console.error('Error creating profile:', createError);
+            } else {
+              setProfile(newProfile as Profile);
+            }
+          }
+        } catch (err) {
+          console.error('Unexpected error handling profile:', err);
         }
       }
       setLoading(false);
@@ -44,13 +66,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     setData();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       if (session) {
         // Fetch profile again on auth change
-        supabase.from('profiles').select('*').eq('id', session.user.id).single().then(({ data }) => {
-          setProfile(data as Profile);
-        });
+        try {
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .maybeSingle();
+          
+          if (profileError) {
+            console.error('Error fetching profile on auth change:', profileError);
+          } else if (profileData) {
+            setProfile(profileData as Profile);
+          }
+        } catch (err) {
+          console.error('Unexpected error fetching profile on auth change:', err);
+        }
       } else {
         setProfile(null);
       }
