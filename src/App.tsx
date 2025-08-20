@@ -8,7 +8,6 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AppointmentPage from "./pages/AppointmentPage";
 import AdminLogin from "./pages/admin/Login";
-import DoctorRegister from "./pages/admin/DoctorRegister";
 import DashboardPage from "./pages/admin/DashboardPage";
 import DoctoresPage from "./pages/admin/DoctoresPage";
 import PacientesPage from "./pages/admin/PacientesPage";
@@ -31,7 +30,6 @@ const App = () => (
 
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
-            <Route path="/admin/register" element={<DoctorRegister />} />
             <Route 
               path="/admin/dashboard" 
               element={

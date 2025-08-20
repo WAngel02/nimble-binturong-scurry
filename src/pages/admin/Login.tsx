@@ -4,8 +4,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/providers/AuthProvider';
 import { useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { UserPlus } from 'lucide-react';
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -63,25 +61,9 @@ const AdminLogin = () => {
         </div>
 
         <div className="text-center">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-gray-50 text-gray-500">¿Eres un doctor nuevo?</span>
-            </div>
-          </div>
-          
-          <div className="mt-4">
-            <Button 
-              variant="outline" 
-              onClick={() => navigate('/admin/register')}
-              className="w-full flex items-center justify-center space-x-2"
-            >
-              <UserPlus className="h-4 w-4" />
-              <span>Registrarse como Doctor</span>
-            </Button>
-          </div>
+          <p className="text-sm text-gray-500">
+            Solo personal autorizado puede acceder al sistema.
+          </p>
         </div>
       </div>
     </div>
