@@ -67,24 +67,39 @@ const AppointmentPage = () => {
   // Cargar doctores al montar el componente
   useEffect(() => {
     const fetchDoctors = async () => {
+      console.log('Fetching doctors...');
       setLoadingDoctors(true);
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, full_name, specialty')
-        .eq('role', 'doctor')
-        .order('full_name');
+      
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, full_name, specialty')
+          .eq('role', 'doctor')
+          .order('full_name');
 
-      if (error) {
-        console.error('Error fetching doctors:', error);
+        console.log('Doctors query result:', { data, error });
+
+        if (error) {
+          console.error('Error fetching doctors:', error);
+          toast({ 
+            title: 'Error', 
+            description: 'No se pudieron cargar los doctores disponibles: ' + error.message, 
+            variant: 'destructive' 
+          });
+        } else {
+          console.log('Doctors loaded successfully:', data);
+          setDoctors(data || []);
+        }
+      } catch (err) {
+        console.error('Unexpected error fetching doctors:', err);
         toast({ 
           title: 'Error', 
-          description: 'No se pudieron cargar los doctores disponibles.', 
+          description: 'Error inesperado al cargar doctores.', 
           variant: 'destructive' 
         });
-      } else {
-        setDoctors(data || []);
+      } finally {
+        setLoadingDoctors(false);
       }
-      setLoadingDoctors(false);
     };
 
     fetchDoctors();
@@ -92,11 +107,16 @@ const AppointmentPage = () => {
 
   // Filtrar doctores cuando cambia la especialidad
   useEffect(() => {
+    console.log('Filtering doctors for specialty:', selectedSpecialty);
+    console.log('Available doctors:', doctors);
+    
     if (selectedSpecialty) {
-      const filtered = doctors.filter(doctor => 
-        doctor.specialty === selectedSpecialty || 
-        !doctor.specialty // Incluir doctores sin especialidad específica
-      );
+      const filtered = doctors.filter(doctor => {
+        const matches = doctor.specialty === selectedSpecialty || !doctor.specialty;
+        console.log(`Doctor ${doctor.full_name} (${doctor.specialty || 'sin especialidad'}) matches ${selectedSpecialty}:`, matches);
+        return matches;
+      });
+      console.log('Filtered doctors:', filtered);
       setFilteredDoctors(filtered);
     } else {
       setFilteredDoctors([]);
@@ -121,12 +141,14 @@ const AppointmentPage = () => {
   const timeSlots = generateTimeSlots();
 
   const handleSpecialtyChange = (specialty: string) => {
+    console.log('Specialty changed to:', specialty);
     setSelectedSpecialty(specialty);
     form.setValue('specialty', specialty);
     form.setValue('doctorId', undefined); // Limpiar doctor seleccionado cuando cambia especialidad
   };
 
   const handleDoctorChange = (doctorId: string) => {
+    console.log('Doctor changed to:', doctorId);
     // Si el valor es "no-preference", no asignar doctor
     if (doctorId === "no-preference") {
       form.setValue('doctorId', undefined);
@@ -156,9 +178,12 @@ const AppointmentPage = () => {
       appointmentData.doctor_id = doctorId;
     }
 
+    console.log('Submitting appointment:', appointmentData);
+
     const { error } = await supabase.from("appointments").insert(appointmentData);
 
     if (error) {
+      console.error('Error creating appointment:', error);
       toast({
         title: "Error",
         description: "Hubo un problema al agendar tu cita. Por favor, inténtalo de nuevo.",
@@ -232,7 +257,7 @@ const AppointmentPage = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Especialidad</FormLabel>
-                    <Select onValueChange={handleSpecialtyChange} defaultValue={field.value}>
+                    <Select onValueChange={handleSpecialtyChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecciona un servicio" />
@@ -350,7 +375,7 @@ const AppointmentPage = () => {
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
                       <FormLabel>Hora de la Cita</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Selecciona una hora" />
