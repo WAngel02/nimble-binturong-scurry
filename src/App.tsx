@@ -11,6 +11,7 @@ import AdminLogin from "./pages/admin/Login";
 import DashboardPage from "./pages/admin/DashboardPage";
 import DoctoresPage from "./pages/admin/DoctoresPage";
 import PacientesPage from "./pages/admin/PacientesPage";
+import PatientProfilePage from "./pages/admin/PatientProfilePage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminLayout from "./components/admin/AdminLayout";
 
@@ -56,6 +57,16 @@ const App = () => (
                 <ProtectedRoute allowedRoles={['admin']}>
                   <AdminLayout>
                     <PacientesPage />
+                  </AdminLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/pacientes/:id" 
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminLayout>
+                    <PatientProfilePage />
                   </AdminLayout>
                 </ProtectedRoute>
               } 
