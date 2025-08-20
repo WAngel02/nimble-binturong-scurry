@@ -123,7 +123,16 @@ const AppointmentPage = () => {
   const handleSpecialtyChange = (specialty: string) => {
     setSelectedSpecialty(specialty);
     form.setValue('specialty', specialty);
-    form.setValue('doctorId', ''); // Limpiar doctor seleccionado cuando cambia especialidad
+    form.setValue('doctorId', undefined); // Limpiar doctor seleccionado cuando cambia especialidad
+  };
+
+  const handleDoctorChange = (doctorId: string) => {
+    // Si el valor es "no-preference", no asignar doctor
+    if (doctorId === "no-preference") {
+      form.setValue('doctorId', undefined);
+    } else {
+      form.setValue('doctorId', doctorId);
+    }
   };
 
   async function onSubmit(values: z.infer<typeof appointmentFormSchema>) {
@@ -160,7 +169,7 @@ const AppointmentPage = () => {
         title: "¡Cita Agendada!",
         description: "Hemos recibido tu solicitud. Nos pondremos en contacto contigo pronto.",
       });
-      form.reset({ fullName: '', email: '', phone: '', notes: '', doctorId: '' });
+      form.reset({ fullName: '', email: '', phone: '', notes: '', doctorId: undefined });
       setSelectedSpecialty('');
     }
   }
@@ -253,20 +262,20 @@ const AppointmentPage = () => {
                         Doctor Preferido (Opcional)
                         {loadingDoctors && <span className="text-sm text-muted-foreground ml-2">Cargando...</span>}
                       </FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value} disabled={loadingDoctors}>
+                      <Select onValueChange={handleDoctorChange} value={field.value || "no-preference"} disabled={loadingDoctors}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder={
                               loadingDoctors 
                                 ? "Cargando doctores..." 
                                 : filteredDoctors.length > 0 
-                                  ? "Selecciona un doctor o deja en blanco" 
+                                  ? "Selecciona un doctor o deja sin preferencia" 
                                   : "No hay doctores disponibles para esta especialidad"
                             } />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">Sin preferencia de doctor</SelectItem>
+                          <SelectItem value="no-preference">Sin preferencia de doctor</SelectItem>
                           {filteredDoctors.map((doctor) => (
                             <SelectItem key={doctor.id} value={doctor.id}>
                               Dr. {doctor.full_name}
