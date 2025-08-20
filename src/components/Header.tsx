@@ -1,18 +1,8 @@
 import { Hospital } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link, useNavigate } from "react-router-dom";
-import { useSession } from "@/providers/SessionProvider";
-import { supabase } from "@/integrations/supabase/client";
+import { Link } from "react-router-dom";
 
 const Header = () => {
-  const { session } = useSession();
-  const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate('/');
-  };
-
   return (
     <header className="bg-white shadow-sm">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -28,18 +18,9 @@ const Header = () => {
             <a href="#" className="text-gray-500 hover:text-gray-900">Contacto</a>
           </nav>
           <div className="flex items-center space-x-4">
-            {session ? (
-              <>
-                <Link to="/dashboard">
-                  <Button variant="outline">Mi Perfil</Button>
-                </Link>
-                <Button onClick={handleLogout}>Cerrar Sesión</Button>
-              </>
-            ) : (
-              <Link to="/login">
-                <Button>Agendar Cita</Button>
-              </Link>
-            )}
+            <Link to="/agendar-cita">
+              <Button>Agendar Cita</Button>
+            </Link>
           </div>
         </div>
       </div>

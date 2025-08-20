@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const Hero = () => {
   return (
@@ -11,7 +12,9 @@ const Hero = () => {
           Ofrecemos atención médica integral con un equipo de especialistas comprometidos con tu bienestar.
         </p>
         <div className="mt-8">
-          <Button size="lg">Agenda tu cita ahora</Button>
+          <Link to="/agendar-cita">
+            <Button size="lg">Agenda tu cita ahora</Button>
+          </Link>
         </div>
       </div>
     </section>
