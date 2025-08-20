@@ -69,7 +69,7 @@ serve(async (req) => {
       )
     }
 
-    // Crear usuario en auth
+    // Crear usuario en auth con metadata que incluye el rol
     const { data: authData, error: authCreateError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
@@ -91,28 +91,64 @@ serve(async (req) => {
       )
     }
 
-    // Crear perfil del doctor
-    const { error: profileError } = await supabaseAdmin
-      .from('profiles')
-      .insert({
-        id: authData.user.id,
-        full_name,
-        specialty: specialty || null,
-        role: 'doctor'
-      })
+    // Esperar un poco para que el trigger automático se ejecute
+    await new Promise(resolve => setTimeout(resolve, 1000))
 
-    if (profileError) {
-      console.error('Error creating profile:', profileError)
-      // Si falla la creación del perfil, eliminar el usuario de auth
-      await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
-      
-      return new Response(
-        JSON.stringify({ error: 'Error al crear perfil del doctor' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
+    // Verificar si el perfil ya existe (creado por el trigger)
+    const { data: existingProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('*')
+      .eq('id', authData.user.id)
+      .single()
+
+    if (existingProfile) {
+      // Si existe, actualizarlo con la especialidad
+      const { error: updateError } = await supabaseAdmin
+        .from('profiles')
+        .update({
+          full_name,
+          specialty: specialty || null,
+          role: 'doctor'
+        })
+        .eq('id', authData.user.id)
+
+      if (updateError) {
+        console.error('Error updating profile:', updateError)
+        // Si falla la actualización, eliminar el usuario de auth
+        await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
+        
+        return new Response(
+          JSON.stringify({ error: 'Error al actualizar perfil del doctor: ' + updateError.message }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        )
+      }
+    } else {
+      // Si no existe, crearlo manualmente
+      const { error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .insert({
+          id: authData.user.id,
+          full_name,
+          specialty: specialty || null,
+          role: 'doctor'
+        })
+
+      if (profileError) {
+        console.error('Error creating profile:', profileError)
+        // Si falla la creación del perfil, eliminar el usuario de auth
+        await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
+        
+        return new Response(
+          JSON.stringify({ error: 'Error al crear perfil del doctor: ' + profileError.message }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        )
+      }
     }
 
     return new Response(
@@ -134,7 +170,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Unexpected error:', error)
     return new Response(
-      JSON.stringify({ error: 'Error interno del servidor' }),
+      JSON.stringify({ error: 'Error interno del servidor: ' + error.message }),
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 

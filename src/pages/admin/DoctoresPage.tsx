@@ -40,6 +40,7 @@ const DoctoresPage = () => {
       .order('full_name');
 
     if (error) {
+      console.error('Error fetching doctors:', error);
       toast({ title: 'Error', description: 'No se pudieron cargar los doctores.', variant: 'destructive' });
     } else {
       setDoctors(data as Profile[]);
@@ -63,7 +64,8 @@ const DoctoresPage = () => {
           .eq('id', editingDoctor.id);
 
         if (error) {
-          toast({ title: 'Error', description: 'No se pudo actualizar el doctor.', variant: 'destructive' });
+          console.error('Error updating doctor:', error);
+          toast({ title: 'Error', description: 'No se pudo actualizar el doctor: ' + error.message, variant: 'destructive' });
         } else {
           toast({ title: 'Éxito', description: 'Doctor actualizado correctamente.' });
           fetchDoctors();
@@ -82,6 +84,12 @@ const DoctoresPage = () => {
           return;
         }
 
+        console.log('Sending request to create doctor:', {
+          email: formData.email,
+          full_name: formData.full_name,
+          specialty: formData.specialty
+        });
+
         const response = await fetch(`https://qazhqnrhjmjpklhzyprd.supabase.co/functions/v1/create-doctor`, {
           method: 'POST',
           headers: {
@@ -97,9 +105,15 @@ const DoctoresPage = () => {
         });
 
         const result = await response.json();
+        console.log('Response from create-doctor:', result);
 
         if (!response.ok) {
-          toast({ title: 'Error', description: result.error || 'Error al crear doctor.', variant: 'destructive' });
+          console.error('Error response:', result);
+          toast({ 
+            title: 'Error', 
+            description: result.error || `Error ${response.status}: ${response.statusText}`, 
+            variant: 'destructive' 
+          });
         } else {
           toast({ title: 'Éxito', description: 'Doctor creado correctamente.' });
           fetchDoctors();
@@ -107,8 +121,12 @@ const DoctoresPage = () => {
         }
       }
     } catch (error) {
-      console.error('Error:', error);
-      toast({ title: 'Error', description: 'Error inesperado.', variant: 'destructive' });
+      console.error('Unexpected error:', error);
+      toast({ 
+        title: 'Error', 
+        description: 'Error inesperado: ' + (error instanceof Error ? error.message : 'Error desconocido'), 
+        variant: 'destructive' 
+      });
     } finally {
       setSubmitting(false);
     }
