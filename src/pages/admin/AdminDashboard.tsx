@@ -1,5 +1,5 @@
 import DashboardStats from '@/components/admin/DashboardStats';
-import AppointmentCalendar from '@/components/admin/AppointmentCalendar';
+import AppointmentsList from '@/components/admin/AppointmentsList';
 
 const AdminDashboard = () => {
   return (
@@ -9,7 +9,7 @@ const AdminDashboard = () => {
         <p className="text-muted-foreground">Una vista general de la actividad de tu centro médico.</p>
       </div>
       <DashboardStats />
-      <AppointmentCalendar />
+      <AppointmentsList />
     </div>
   );
 };

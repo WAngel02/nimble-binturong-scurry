@@ -12,51 +12,67 @@ const DashboardStats = () => {
     attendedThisMonth: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchStats = async () => {
-      setLoading(true);
-      const now = new Date();
-      
-      const todayStart = startOfDay(now).toISOString();
-      const todayEnd = endOfDay(now).toISOString();
-      const next7DaysEnd = endOfDay(addDays(now, 7)).toISOString();
-      const monthStart = startOfMonth(now).toISOString();
-      const monthEnd = endOfMonth(now).toISOString();
+      try {
+        setLoading(true);
+        setError(null);
+        const now = new Date();
+        
+        const todayStart = startOfDay(now).toISOString();
+        const todayEnd = endOfDay(now).toISOString();
+        const next7DaysEnd = endOfDay(addDays(now, 7)).toISOString();
+        const monthStart = startOfMonth(now).toISOString();
+        const monthEnd = endOfMonth(now).toISOString();
 
-      const { count: todayCount } = await supabase
-        .from('appointments')
-        .select('*', { count: 'exact', head: true })
-        .gte('appointment_date', todayStart)
-        .lte('appointment_date', todayEnd);
+        const { count: todayCount, error: todayError } = await supabase
+          .from('appointments')
+          .select('*', { count: 'exact', head: true })
+          .gte('appointment_date', todayStart)
+          .lte('appointment_date', todayEnd);
 
-      const { count: next7DaysCount } = await supabase
-        .from('appointments')
-        .select('*', { count: 'exact', head: true })
-        .gte('appointment_date', todayStart)
-        .lte('appointment_date', next7DaysEnd);
+        if (todayError) throw todayError;
 
-      const { count: cancelledCount } = await supabase
-        .from('appointments')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'cancelled')
-        .gte('appointment_date', monthStart)
-        .lte('appointment_date', monthEnd);
+        const { count: next7DaysCount, error: next7DaysError } = await supabase
+          .from('appointments')
+          .select('*', { count: 'exact', head: true })
+          .gte('appointment_date', todayStart)
+          .lte('appointment_date', next7DaysEnd);
 
-      const { count: attendedCount } = await supabase
-        .from('appointments')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'confirmed')
-        .gte('appointment_date', monthStart)
-        .lte('appointment_date', monthEnd);
+        if (next7DaysError) throw next7DaysError;
 
-      setStats({
-        today: todayCount ?? 0,
-        next7Days: next7DaysCount ?? 0,
-        cancelled: cancelledCount ?? 0,
-        attendedThisMonth: attendedCount ?? 0,
-      });
-      setLoading(false);
+        const { count: cancelledCount, error: cancelledError } = await supabase
+          .from('appointments')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'cancelled')
+          .gte('appointment_date', monthStart)
+          .lte('appointment_date', monthEnd);
+
+        if (cancelledError) throw cancelledError;
+
+        const { count: attendedCount, error: attendedError } = await supabase
+          .from('appointments')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'confirmed')
+          .gte('appointment_date', monthStart)
+          .lte('appointment_date', monthEnd);
+
+        if (attendedError) throw attendedError;
+
+        setStats({
+          today: todayCount ?? 0,
+          next7Days: next7DaysCount ?? 0,
+          cancelled: cancelledCount ?? 0,
+          attendedThisMonth: attendedCount ?? 0,
+        });
+      } catch (err) {
+        console.error('Error fetching stats:', err);
+        setError('Error al cargar las estadísticas');
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchStats();
@@ -70,7 +86,28 @@ const DashboardStats = () => {
   ];
 
   if (loading) {
-    return <div>Cargando estadísticas...</div>;
+    return (
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {[1, 2, 3, 4].map((i) => (
+          <Card key={i}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Cargando...</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">-</div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+        <p className="text-red-800">{error}</p>
+      </div>
+    );
   }
 
   return (

@@ -14,39 +14,41 @@ const AppointmentsList = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [doctors, setDoctors] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchAppointmentsAndDoctors = async () => {
-    setLoading(true);
-    const today = new Date();
-    const startOfDay = new Date(today.setHours(0, 0, 0, 0)).toISOString();
-    const endOfDay = new Date(today.setHours(23, 59, 59, 999)).toISOString();
+    try {
+      setLoading(true);
+      setError(null);
+      const today = new Date();
+      const startOfDay = new Date(today.setHours(0, 0, 0, 0)).toISOString();
+      const endOfDay = new Date(today.setHours(23, 59, 59, 999)).toISOString();
 
-    const { data: appointmentsData, error: appointmentsError } = await supabase
-      .from('appointments')
-      .select('*, doctor:profiles(full_name)')
-      .gte('appointment_date', startOfDay)
-      .lte('appointment_date', endOfDay)
-      .order('appointment_date', { ascending: true });
+      const { data: appointmentsData, error: appointmentsError } = await supabase
+        .from('appointments')
+        .select('*')
+        .gte('appointment_date', startOfDay)
+        .lte('appointment_date', endOfDay)
+        .order('appointment_date', { ascending: true });
 
-    if (appointmentsError) {
-      console.error('Error fetching appointments:', appointmentsError);
-      toast({ title: 'Error', description: 'No se pudieron cargar las citas.', variant: 'destructive' });
-    } else {
-      setAppointments(appointmentsData as any);
-    }
+      if (appointmentsError) throw appointmentsError;
 
-    const { data: doctorsData, error: doctorsError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('role', 'doctor');
+      const { data: doctorsData, error: doctorsError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('role', 'doctor');
 
-    if (doctorsError) {
-      console.error('Error fetching doctors:', doctorsError);
-    } else {
+      if (doctorsError) throw doctorsError;
+
+      setAppointments(appointmentsData as Appointment[]);
       setDoctors(doctorsData as Profile[]);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setError('Error al cargar los datos');
+      toast({ title: 'Error', description: 'No se pudieron cargar las citas.', variant: 'destructive' });
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -91,7 +93,31 @@ const AppointmentsList = () => {
     }
   };
 
-  if (loading) return <div>Cargando citas...</div>;
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Citas para Hoy</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-4">Cargando citas...</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Citas para Hoy</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-4 text-red-600">{error}</div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -120,7 +146,7 @@ const AppointmentsList = () => {
                   <TableCell>{format(new Date(appointment.appointment_date), 'p', { locale: es })}</TableCell>
                   <TableCell>
                     {appointment.doctor_id ? (
-                      (appointment as any).doctor?.full_name || 'Doctor Asignado'
+                      <span>Doctor Asignado</span>
                     ) : (
                       <Select onValueChange={(doctorId) => handleAssignDoctor(appointment.id, doctorId)}>
                         <SelectTrigger className="w-[180px]">
