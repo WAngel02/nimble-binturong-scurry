@@ -48,10 +48,17 @@ const appointmentFormSchema = z.object({
   notes: z.string().optional(),
 });
 
+interface Doctor {
+  id: string;
+  full_name: string;
+  specialty: string;
+}
+
 const AppointmentPage = () => {
-  const [doctors, setDoctors] = useState<any[]>([]);
-  const [filteredDoctors, setFilteredDoctors] = useState<any[]>([]);
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [filteredDoctors, setFilteredDoctors] = useState<Doctor[]>([]);
   const [selectedSpecialty, setSelectedSpecialty] = useState<string>("");
+  const [loadingDoctors, setLoadingDoctors] = useState(false);
 
   const form = useForm<z.infer<typeof appointmentFormSchema>>({
     resolver: zodResolver(appointmentFormSchema),
@@ -60,16 +67,24 @@ const AppointmentPage = () => {
   // Cargar doctores al montar el componente
   useEffect(() => {
     const fetchDoctors = async () => {
+      setLoadingDoctors(true);
       const { data, error } = await supabase
         .from('profiles')
         .select('id, full_name, specialty')
-        .eq('role', 'doctor');
+        .eq('role', 'doctor')
+        .order('full_name');
 
       if (error) {
         console.error('Error fetching doctors:', error);
+        toast({ 
+          title: 'Error', 
+          description: 'No se pudieron cargar los doctores disponibles.', 
+          variant: 'destructive' 
+        });
       } else {
         setDoctors(data || []);
       }
+      setLoadingDoctors(false);
     };
 
     fetchDoctors();
@@ -80,7 +95,7 @@ const AppointmentPage = () => {
     if (selectedSpecialty) {
       const filtered = doctors.filter(doctor => 
         doctor.specialty === selectedSpecialty || 
-        !doctor.specialty // Incluir doctores sin especialidad asignada
+        !doctor.specialty // Incluir doctores sin especialidad específica
       );
       setFilteredDoctors(filtered);
     } else {
@@ -108,7 +123,7 @@ const AppointmentPage = () => {
   const handleSpecialtyChange = (specialty: string) => {
     setSelectedSpecialty(specialty);
     form.setValue('specialty', specialty);
-    form.setValue('doctorId', ''); // Limpiar doctor seleccionado
+    form.setValue('doctorId', ''); // Limpiar doctor seleccionado cuando cambia especialidad
   };
 
   async function onSubmit(values: z.infer<typeof appointmentFormSchema>) {
@@ -228,28 +243,48 @@ const AppointmentPage = () => {
               />
               
               {/* Campo de Doctor - Solo se muestra si hay especialidad seleccionada */}
-              {selectedSpecialty && filteredDoctors.length > 0 && (
+              {selectedSpecialty && (
                 <FormField
                   control={form.control}
                   name="doctorId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Doctor (Opcional)</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormLabel>
+                        Doctor Preferido (Opcional)
+                        {loadingDoctors && <span className="text-sm text-muted-foreground ml-2">Cargando...</span>}
+                      </FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value} disabled={loadingDoctors}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Selecciona un doctor o deja en blanco" />
+                            <SelectValue placeholder={
+                              loadingDoctors 
+                                ? "Cargando doctores..." 
+                                : filteredDoctors.length > 0 
+                                  ? "Selecciona un doctor o deja en blanco" 
+                                  : "No hay doctores disponibles para esta especialidad"
+                            } />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">Sin preferencia</SelectItem>
+                          <SelectItem value="">Sin preferencia de doctor</SelectItem>
                           {filteredDoctors.map((doctor) => (
                             <SelectItem key={doctor.id} value={doctor.id}>
-                              {doctor.full_name}
+                              Dr. {doctor.full_name}
+                              {doctor.specialty && (
+                                <span className="text-sm text-muted-foreground ml-2">
+                                  - {doctor.specialty}
+                                </span>
+                              )}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
+                      {selectedSpecialty && filteredDoctors.length === 0 && !loadingDoctors && (
+                        <p className="text-sm text-muted-foreground">
+                          No hay doctores especializados en {selectedSpecialty} disponibles actualmente.
+                          Puedes continuar sin seleccionar doctor y te asignaremos uno disponible.
+                        </p>
+                      )}
                       <FormMessage />
                     </FormItem>
                   )}
