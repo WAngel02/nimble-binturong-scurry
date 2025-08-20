@@ -1,10 +1,10 @@
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { useSession } from '@/providers/SessionProvider';
+import { useAuth } from '@/providers/AuthProvider';
 import { useNavigate } from 'react-router-dom';
 
 const HeaderAdmin = () => {
-  const { session } = useSession();
+  const { session, profile } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -18,7 +18,7 @@ const HeaderAdmin = () => {
         <div className="flex items-center justify-end h-16">
           <div className="flex items-center space-x-4">
             {session && (
-              <p className="text-sm text-gray-600">Hola, {session.user.email}</p>
+              <p className="text-sm text-gray-600">Hola, {profile?.full_name || session.user.email}</p>
             )}
             <Button onClick={handleLogout} variant="outline">Cerrar Sesión</Button>
           </div>

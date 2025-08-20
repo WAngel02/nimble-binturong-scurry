@@ -2,12 +2,12 @@ import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { useSession } from '@/providers/SessionProvider';
+import { useAuth } from '@/providers/AuthProvider';
 import { useEffect } from 'react';
 
 const AdminLogin = () => {
   const navigate = useNavigate();
-  const { session } = useSession();
+  const { session } = useAuth();
 
   useEffect(() => {
     if (session) {

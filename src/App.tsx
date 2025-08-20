@@ -3,13 +3,13 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { SessionProvider } from "@/providers/SessionProvider";
+import { AuthProvider } from "@/providers/AuthProvider";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AppointmentPage from "./pages/AppointmentPage";
 import AdminLogin from "./pages/admin/Login";
-import AdminDashboard from "./pages/admin/Dashboard";
-import AdminProtectedRoute from "./components/AdminProtectedRoute";
+import DashboardPage from "./pages/admin/DashboardPage";
+import ProtectedRoute from "./components/ProtectedRoute";
 import AdminLayout from "./components/admin/AdminLayout";
 
 const queryClient = new QueryClient();
@@ -20,7 +20,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <SessionProvider>
+        <AuthProvider>
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<Index />} />
@@ -31,18 +31,18 @@ const App = () => (
             <Route 
               path="/admin/dashboard" 
               element={
-                <AdminProtectedRoute>
+                <ProtectedRoute allowedRoles={['admin', 'doctor']}>
                   <AdminLayout>
-                    <AdminDashboard />
+                    <DashboardPage />
                   </AdminLayout>
-                </AdminProtectedRoute>
+                </ProtectedRoute>
               } 
             />
 
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </SessionProvider>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
