@@ -13,12 +13,9 @@ const HeaderAdmin = () => {
   };
 
   return (
-    <header className="bg-white shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center">
-            <span className="text-xl font-bold text-primary">Centro Médico Vitalis - Admin</span>
-          </div>
+    <header className="bg-white shadow-sm sticky top-0 z-10">
+      <div className="px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-end h-16">
           <div className="flex items-center space-x-4">
             {session && (
               <p className="text-sm text-gray-600">Hola, {session.user.email}</p>

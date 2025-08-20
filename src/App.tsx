@@ -10,6 +10,7 @@ import AppointmentPage from "./pages/AppointmentPage";
 import AdminLogin from "./pages/admin/Login";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
+import AdminLayout from "./components/admin/AdminLayout";
 
 const queryClient = new QueryClient();
 
@@ -31,7 +32,9 @@ const App = () => (
               path="/admin/dashboard" 
               element={
                 <AdminProtectedRoute>
-                  <AdminDashboard />
+                  <AdminLayout>
+                    <AdminDashboard />
+                  </AdminLayout>
                 </AdminProtectedRoute>
               } 
             />
