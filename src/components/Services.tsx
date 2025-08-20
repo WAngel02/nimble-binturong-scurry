@@ -1,5 +1,5 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Stethoscope, Tooth, HeartPulse } from "lucide-react";
+import { Stethoscope, Smile, HeartPulse } from "lucide-react";
 
 const services = [
   {
@@ -8,7 +8,7 @@ const services = [
     description: "Atención primaria para todas las edades, diagnóstico y tratamiento de enfermedades comunes.",
   },
   {
-    icon: <Tooth className="h-10 w-10 text-primary mb-4" />,
+    icon: <Smile className="h-10 w-10 text-primary mb-4" />,
     title: "Odontología",
     description: "Servicios dentales completos, desde limpiezas hasta tratamientos especializados.",
   },
