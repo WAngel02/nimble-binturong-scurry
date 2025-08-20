@@ -1,5 +1,6 @@
 import { Hospital } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const Header = () => {
   return (
@@ -11,12 +12,14 @@ const Header = () => {
             <span className="ml-2 text-xl font-bold text-primary">Centro Médico Vitalis</span>
           </div>
           <nav className="hidden md:flex md:space-x-8">
-            <a href="#" className="text-gray-500 hover:text-gray-900">Inicio</a>
-            <a href="#services" className="text-gray-500 hover:text-gray-900">Servicios</a>
+            <a href="/" className="text-gray-500 hover:text-gray-900">Inicio</a>
+            <a href="/#services" className="text-gray-500 hover:text-gray-900">Servicios</a>
             <a href="#" className="text-gray-500 hover:text-gray-900">Sobre Nosotros</a>
             <a href="#" className="text-gray-500 hover:text-gray-900">Contacto</a>
           </nav>
-          <Button>Agendar Cita</Button>
+          <Link to="/login">
+            <Button>Agendar Cita</Button>
+          </Link>
         </div>
       </div>
     </header>
