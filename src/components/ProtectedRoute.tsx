@@ -15,29 +15,50 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
     if (loading) return;
 
     if (!session) {
+      console.log('No session found, redirecting to login');
       navigate('/admin/login');
       return;
     }
 
     if (allowedRoles && profile && !allowedRoles.includes(profile.role)) {
-      // Optional: redirect to an "unauthorized" page or back to login
+      console.log('User role not allowed:', profile.role, 'Required:', allowedRoles);
       navigate('/admin/login');
+      return;
     }
   }, [session, profile, loading, navigate, allowedRoles]);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div>Cargando...</div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando...</p>
+        </div>
       </div>
     );
   }
 
-  if (session && (!allowedRoles || (profile && allowedRoles.includes(profile.role)))) {
-    return <>{children}</>;
+  if (!session) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <p className="text-gray-600">Redirigiendo al login...</p>
+        </div>
+      </div>
+    );
   }
 
-  return null;
+  if (allowedRoles && profile && !allowedRoles.includes(profile.role)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <p className="text-red-600">No tienes permisos para acceder a esta página.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
 };
 
 export default ProtectedRoute;

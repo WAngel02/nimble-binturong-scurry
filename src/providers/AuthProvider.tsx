@@ -16,81 +16,116 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const setData = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) {
-        console.error('Error getting session:', error);
-        setLoading(false);
-        return;
+  const fetchProfile = async (userId: string) => {
+    try {
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+      
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+        return null;
       }
       
-      setSession(session);
-      if (session) {
-        try {
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .maybeSingle(); // Usar maybeSingle() en lugar de single() para evitar errores cuando no hay resultados
-          
-          if (profileError) {
-            console.error('Error fetching profile:', profileError);
-          } else if (profileData) {
-            setProfile(profileData as Profile);
-          } else {
-            // Si no existe el perfil, crear uno básico
-            console.log('No profile found, creating one...');
-            const { data: newProfile, error: createError } = await supabase
-              .from('profiles')
-              .insert({
-                id: session.user.id,
-                full_name: session.user.email || 'Usuario',
-                role: 'doctor' // rol por defecto
-              })
-              .select()
-              .single();
-            
-            if (createError) {
-              console.error('Error creating profile:', createError);
-            } else {
-              setProfile(newProfile as Profile);
-            }
+      if (profileData) {
+        return profileData as Profile;
+      }
+      
+      // Si no existe el perfil, crear uno básico
+      console.log('No profile found, creating one...');
+      const { data: newProfile, error: createError } = await supabase
+        .from('profiles')
+        .insert({
+          id: userId,
+          full_name: 'Usuario',
+          role: 'doctor' // rol por defecto
+        })
+        .select()
+        .single();
+      
+      if (createError) {
+        console.error('Error creating profile:', createError);
+        return null;
+      }
+      
+      return newProfile as Profile;
+    } catch (err) {
+      console.error('Unexpected error handling profile:', err);
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const setData = async () => {
+      try {
+        setLoading(true);
+        
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting session:', error);
+          if (isMounted) {
+            setSession(null);
+            setProfile(null);
+            setLoading(false);
           }
-        } catch (err) {
-          console.error('Unexpected error handling profile:', err);
+          return;
+        }
+        
+        if (isMounted) {
+          setSession(session);
+        }
+        
+        if (session && isMounted) {
+          const profileData = await fetchProfile(session.user.id);
+          if (isMounted) {
+            setProfile(profileData);
+          }
+        } else if (isMounted) {
+          setProfile(null);
+        }
+      } catch (err) {
+        console.error('Unexpected error in setData:', err);
+        if (isMounted) {
+          setSession(null);
+          setProfile(null);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
         }
       }
-      setLoading(false);
     };
 
     setData();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!isMounted) return;
+      
+      console.log('Auth state changed:', event, session?.user?.email);
+      
       setSession(session);
+      
       if (session) {
-        // Fetch profile again on auth change
-        try {
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .maybeSingle();
-          
-          if (profileError) {
-            console.error('Error fetching profile on auth change:', profileError);
-          } else if (profileData) {
-            setProfile(profileData as Profile);
-          }
-        } catch (err) {
-          console.error('Unexpected error fetching profile on auth change:', err);
+        const profileData = await fetchProfile(session.user.id);
+        if (isMounted) {
+          setProfile(profileData);
         }
       } else {
-        setProfile(null);
+        if (isMounted) {
+          setProfile(null);
+        }
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   return (

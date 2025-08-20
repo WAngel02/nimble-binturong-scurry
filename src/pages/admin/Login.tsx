@@ -7,13 +7,35 @@ import { useEffect } from 'react';
 
 const AdminLogin = () => {
   const navigate = useNavigate();
-  const { session } = useAuth();
+  const { session, loading } = useAuth();
 
   useEffect(() => {
-    if (session) {
+    if (!loading && session) {
+      console.log('User already logged in, redirecting to dashboard');
       navigate('/admin/dashboard');
     }
-  }, [session, navigate]);
+  }, [session, loading, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (session) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <p className="text-gray-600">Redirigiendo al dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -22,6 +44,9 @@ const AdminLogin = () => {
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
             Panel de Administración
           </h2>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            Inicia sesión para acceder al sistema
+          </p>
         </div>
         <div className="p-8 rounded-lg shadow-lg bg-white">
           <Auth
