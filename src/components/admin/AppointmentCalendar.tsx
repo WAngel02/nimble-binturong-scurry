@@ -17,29 +17,45 @@ const AppointmentCalendar = () => {
 
   useEffect(() => {
     const fetchAppointmentsAndDoctors = async () => {
-      const { data: doctorsData, error: doctorsError } = await supabase
-        .from('profiles')
-        .select('id, full_name')
-        .eq('role', 'doctor');
+      try {
+        // Primero obtener los doctores
+        const { data: doctorsData, error: doctorsError } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .eq('role', 'doctor');
 
-      if (doctorsError) {
-        toast({ title: 'Error', description: 'No se pudieron cargar los doctores.', variant: 'destructive' });
-        return;
-      }
+        if (doctorsError) {
+          console.error('Error fetching doctors:', doctorsError);
+          toast({ title: 'Error', description: 'No se pudieron cargar los doctores.', variant: 'destructive' });
+          return;
+        }
 
-      const colors = new Map();
-      doctorsData.forEach((doc, index) => {
-        colors.set(doc.id, DOCTOR_COLORS[index % DOCTOR_COLORS.length]);
-      });
-      setDoctorColors(colors);
+        // Crear mapa de colores para doctores
+        const colors = new Map();
+        doctorsData.forEach((doc, index) => {
+          colors.set(doc.id, DOCTOR_COLORS[index % DOCTOR_COLORS.length]);
+        });
+        setDoctorColors(colors);
 
-      const { data: appointmentsData, error: appointmentsError } = await supabase
-        .from('appointments')
-        .select('*, doctor:profiles(full_name)');
+        // Crear mapa de nombres de doctores
+        const doctorNames = new Map();
+        doctorsData.forEach((doc) => {
+          doctorNames.set(doc.id, doc.full_name);
+        });
 
-      if (appointmentsError) {
-        toast({ title: 'Error', description: 'No se pudieron cargar las citas.', variant: 'destructive' });
-      } else {
+        // Obtener las citas
+        const { data: appointmentsData, error: appointmentsError } = await supabase
+          .from('appointments')
+          .select('*')
+          .order('appointment_date', { ascending: true });
+
+        if (appointmentsError) {
+          console.error('Error fetching appointments:', appointmentsError);
+          toast({ title: 'Error', description: 'No se pudieron cargar las citas.', variant: 'destructive' });
+          return;
+        }
+
+        // Formatear eventos para el calendario
         const formattedEvents = appointmentsData.map((apt: any) => ({
           id: apt.id,
           title: apt.full_name,
@@ -51,10 +67,16 @@ const AppointmentCalendar = () => {
             specialty: apt.specialty,
             status: apt.status,
             notes: apt.notes,
-            doctorName: apt.doctor?.full_name,
+            doctorName: apt.doctor_id ? doctorNames.get(apt.doctor_id) : 'No asignado',
+            email: apt.email,
+            phone: apt.phone,
           },
         }));
+        
         setEvents(formattedEvents as any);
+      } catch (error) {
+        console.error('Unexpected error:', error);
+        toast({ title: 'Error', description: 'Error inesperado al cargar los datos.', variant: 'destructive' });
       }
     };
 
@@ -91,6 +113,9 @@ const AppointmentCalendar = () => {
             week: 'Semana',
             day: 'Día',
           }}
+          height="auto"
+          slotMinTime="08:00:00"
+          slotMaxTime="18:00:00"
         />
       </div>
       <AppointmentDetailsModal
