@@ -33,6 +33,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { useState, useEffect } from "react";
 
 const services = ["Consulta General", "Odontología", "Cardiología"];
 
@@ -41,15 +42,51 @@ const appointmentFormSchema = z.object({
   email: z.string().email({ message: "Por favor, introduce un correo electrónico válido." }),
   phone: z.string().optional(),
   specialty: z.string({ required_error: "Por favor, selecciona una especialidad." }),
+  doctorId: z.string().optional(),
   date: z.date({ required_error: "Por favor, selecciona una fecha." }),
   time: z.string({ required_error: "Por favor, selecciona una hora." }),
   notes: z.string().optional(),
 });
 
 const AppointmentPage = () => {
+  const [doctors, setDoctors] = useState<any[]>([]);
+  const [filteredDoctors, setFilteredDoctors] = useState<any[]>([]);
+  const [selectedSpecialty, setSelectedSpecialty] = useState<string>("");
+
   const form = useForm<z.infer<typeof appointmentFormSchema>>({
     resolver: zodResolver(appointmentFormSchema),
   });
+
+  // Cargar doctores al montar el componente
+  useEffect(() => {
+    const fetchDoctors = async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, specialty')
+        .eq('role', 'doctor');
+
+      if (error) {
+        console.error('Error fetching doctors:', error);
+      } else {
+        setDoctors(data || []);
+      }
+    };
+
+    fetchDoctors();
+  }, []);
+
+  // Filtrar doctores cuando cambia la especialidad
+  useEffect(() => {
+    if (selectedSpecialty) {
+      const filtered = doctors.filter(doctor => 
+        doctor.specialty === selectedSpecialty || 
+        !doctor.specialty // Incluir doctores sin especialidad asignada
+      );
+      setFilteredDoctors(filtered);
+    } else {
+      setFilteredDoctors([]);
+    }
+  }, [selectedSpecialty, doctors]);
 
   const generateTimeSlots = () => {
     const slots = [];
@@ -68,21 +105,34 @@ const AppointmentPage = () => {
 
   const timeSlots = generateTimeSlots();
 
+  const handleSpecialtyChange = (specialty: string) => {
+    setSelectedSpecialty(specialty);
+    form.setValue('specialty', specialty);
+    form.setValue('doctorId', ''); // Limpiar doctor seleccionado
+  };
+
   async function onSubmit(values: z.infer<typeof appointmentFormSchema>) {
-    const { fullName, email, phone, specialty, date, time, notes } = values;
+    const { fullName, email, phone, specialty, doctorId, date, time, notes } = values;
     
     const [hours, minutes] = time.split(':').map(Number);
     const appointmentDateTime = new Date(date);
     appointmentDateTime.setHours(hours, minutes, 0, 0);
 
-    const { error } = await supabase.from("appointments").insert({
+    const appointmentData: any = {
       full_name: fullName,
       email,
       phone,
       specialty,
       appointment_date: appointmentDateTime.toISOString(),
       notes,
-    });
+    };
+
+    // Solo agregar doctor_id si se seleccionó uno
+    if (doctorId) {
+      appointmentData.doctor_id = doctorId;
+    }
+
+    const { error } = await supabase.from("appointments").insert(appointmentData);
 
     if (error) {
       toast({
@@ -95,7 +145,8 @@ const AppointmentPage = () => {
         title: "¡Cita Agendada!",
         description: "Hemos recibido tu solicitud. Nos pondremos en contacto contigo pronto.",
       });
-      form.reset({ fullName: '', email: '', phone: '', notes: '' });
+      form.reset({ fullName: '', email: '', phone: '', notes: '', doctorId: '' });
+      setSelectedSpecialty('');
     }
   }
 
@@ -157,7 +208,7 @@ const AppointmentPage = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Especialidad</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={handleSpecialtyChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecciona un servicio" />
@@ -175,6 +226,36 @@ const AppointmentPage = () => {
                   </FormItem>
                 )}
               />
+              
+              {/* Campo de Doctor - Solo se muestra si hay especialidad seleccionada */}
+              {selectedSpecialty && filteredDoctors.length > 0 && (
+                <FormField
+                  control={form.control}
+                  name="doctorId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Doctor (Opcional)</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecciona un doctor o deja en blanco" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="">Sin preferencia</SelectItem>
+                          {filteredDoctors.map((doctor) => (
+                            <SelectItem key={doctor.id} value={doctor.id}>
+                              {doctor.full_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <FormField
                   control={form.control}
@@ -206,7 +287,11 @@ const AppointmentPage = () => {
                             mode="single"
                             selected={field.value}
                             onSelect={field.onChange}
-                            disabled={(date) => date < new Date() || date < new Date("1900-01-01")}
+                            disabled={(date) => {
+                              const today = new Date();
+                              today.setHours(0, 0, 0, 0);
+                              return date < today; // Solo deshabilitar fechas anteriores a hoy
+                            }}
                             initialFocus
                           />
                         </PopoverContent>
