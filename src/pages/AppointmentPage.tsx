@@ -42,6 +42,7 @@ const appointmentFormSchema = z.object({
   phone: z.string().optional(),
   specialty: z.string({ required_error: "Por favor, selecciona una especialidad." }),
   date: z.date({ required_error: "Por favor, selecciona una fecha." }),
+  time: z.string({ required_error: "Por favor, selecciona una hora." }),
   notes: z.string().optional(),
 });
 
@@ -50,14 +51,36 @@ const AppointmentPage = () => {
     resolver: zodResolver(appointmentFormSchema),
   });
 
+  const generateTimeSlots = () => {
+    const slots = [];
+    const baseDate = new Date('1970-01-01T00:00:00');
+    const startTime = new Date(baseDate);
+    startTime.setHours(9, 0, 0, 0); // 9:00 AM
+    const endTime = new Date(baseDate);
+    endTime.setHours(17, 0, 0, 0); // 5:00 PM
+
+    while (startTime < endTime) {
+      slots.push(format(startTime, 'HH:mm'));
+      startTime.setMinutes(startTime.getMinutes() + 30);
+    }
+    return slots;
+  };
+
+  const timeSlots = generateTimeSlots();
+
   async function onSubmit(values: z.infer<typeof appointmentFormSchema>) {
-    const { fullName, email, phone, specialty, date, notes } = values;
+    const { fullName, email, phone, specialty, date, time, notes } = values;
+    
+    const [hours, minutes] = time.split(':').map(Number);
+    const appointmentDateTime = new Date(date);
+    appointmentDateTime.setHours(hours, minutes, 0, 0);
+
     const { error } = await supabase.from("appointments").insert({
       full_name: fullName,
       email,
       phone,
       specialty,
-      appointment_date: date.toISOString(),
+      appointment_date: appointmentDateTime.toISOString(),
       notes,
     });
 
@@ -128,31 +151,31 @@ const AppointmentPage = () => {
                   )}
                 />
               </div>
+              <FormField
+                control={form.control}
+                name="specialty"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Especialidad</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona un servicio" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {services.map((service) => (
+                          <SelectItem key={service} value={service}>
+                            {service}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <FormField
-                  control={form.control}
-                  name="specialty"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Especialidad</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecciona un servicio" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {services.map((service) => (
-                            <SelectItem key={service} value={service}>
-                              {service}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
                 <FormField
                   control={form.control}
                   name="date"
@@ -188,6 +211,30 @@ const AppointmentPage = () => {
                           />
                         </PopoverContent>
                       </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="time"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Hora de la Cita</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecciona una hora" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {timeSlots.map((slot) => (
+                            <SelectItem key={slot} value={slot}>
+                              {slot}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
