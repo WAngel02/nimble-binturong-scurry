@@ -1,10 +1,11 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, Hospital } from 'lucide-react';
+import { Home, Users, UserCheck, Hospital } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navigation = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: Home },
-  { name: 'Pacientes', href: '#', icon: Users }, // Placeholder
+  { name: 'Doctores', href: '/admin/doctores', icon: UserCheck },
+  { name: 'Pacientes', href: '/admin/pacientes', icon: Users },
 ];
 
 const Sidebar = () => {
