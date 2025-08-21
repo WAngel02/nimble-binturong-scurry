@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, User, Mail, Phone, Droplet, MapPin, Fingerprint } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import PatientAppointmentsList from '@/components/admin/PatientAppointmentsList';
 
 const PatientProfilePage = () => {
   const { id } = useParams<{ id: string }>();
@@ -51,7 +53,7 @@ const PatientProfilePage = () => {
   ];
 
   return (
-    <div className="p-8">
+    <div className="p-8 space-y-6">
       <div className="mb-6">
         <Button asChild variant="outline">
           <Link to="/admin/pacientes">
@@ -89,6 +91,15 @@ const PatientProfilePage = () => {
           </div>
         </CardContent>
       </Card>
+
+      <Tabs defaultValue="appointments" className="w-full">
+        <TabsList>
+          <TabsTrigger value="appointments">Últimas Consultas</TabsTrigger>
+        </TabsList>
+        <TabsContent value="appointments" className="mt-4">
+          {id && <PatientAppointmentsList patientId={id} />}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
