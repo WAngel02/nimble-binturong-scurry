@@ -65,8 +65,13 @@ export default {
       },
       borderRadius: {
         lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        md: "calc(var(--radius) - 4px)",
+        sm: "calc(var(--radius) - 8px)",
+      },
+      boxShadow: {
+        'premium-sm': '0 2px 4px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.04)',
+        'premium-md': '0 4px 8px rgba(0, 0, 0, 0.03), 0 2px 6px rgba(0, 0, 0, 0.05)',
+        'premium-lg': '0 10px 20px rgba(0, 0, 0, 0.04), 0 5px 15px rgba(0, 0, 0, 0.06)',
       },
       keyframes: {
         "accordion-down": {

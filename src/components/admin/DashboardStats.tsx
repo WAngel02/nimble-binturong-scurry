@@ -77,7 +77,7 @@ const DashboardStats = () => {
     return (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {[1, 2, 3].map((i) => (
-          <Card key={i}>
+          <Card key={i} className="shadow-premium-md">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Cargando...</CardTitle>
             </CardHeader>
@@ -101,7 +101,7 @@ const DashboardStats = () => {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {statCards.map((card, index) => (
-        <Card key={index}>
+        <Card key={index} className="shadow-premium-md transition-all hover:shadow-premium-lg hover:-translate-y-1">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
             {card.icon}

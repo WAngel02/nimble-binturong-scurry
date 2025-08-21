@@ -133,7 +133,7 @@ const AppointmentEditModal = ({ appointment, isOpen, onClose, onUpdate }: Appoin
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] bg-white/70 backdrop-blur-lg border-border shadow-premium-lg">
         <DialogHeader>
           <DialogTitle>Detalles de la Cita</DialogTitle>
           <DialogDescription>

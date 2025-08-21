@@ -193,7 +193,7 @@ const AddAppointmentModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] bg-white/70 backdrop-blur-lg border-border shadow-premium-lg">
         <DialogHeader>
           <DialogTitle>Agendar Nueva Cita</DialogTitle>
           <DialogDescription>

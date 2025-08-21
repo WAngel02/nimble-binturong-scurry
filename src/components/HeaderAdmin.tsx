@@ -36,7 +36,7 @@ const HeaderAdmin = () => {
   };
 
   return (
-    <header className="bg-white shadow-sm sticky top-0 z-10 border-b">
+    <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-lg border-b">
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
