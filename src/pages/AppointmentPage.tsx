@@ -21,6 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import SpecialtySelector from "@/components/booking/SpecialtySelector";
 import DoctorSelector from "@/components/booking/DoctorSelector";
 import TimeSelector from "@/components/booking/TimeSelector";
+import ConfirmationModal from "@/components/booking/ConfirmationModal";
 import { Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -47,6 +48,7 @@ const AppointmentPage = () => {
   const [filteredDoctors, setFilteredDoctors] = useState<Doctor[]>([]);
   const [loadingDoctors, setLoadingDoctors] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const form = useForm<z.infer<typeof appointmentFormSchema>>({
     resolver: zodResolver(appointmentFormSchema),
@@ -88,7 +90,7 @@ const AppointmentPage = () => {
     }
   }, [selectedSpecialty, doctors, form]);
 
-  async function onSubmit(values: z.infer<typeof appointmentFormSchema>) {
+  async function handleConfirmAppointment(values: z.infer<typeof appointmentFormSchema>) {
     setIsSubmitting(true);
     const { fullName, email, phone, specialty, doctorId, date, time, notes } = values;
     
@@ -109,11 +111,25 @@ const AppointmentPage = () => {
     if (error) {
       toast({ title: "Error", description: "Hubo un problema al agendar tu cita.", variant: "destructive" });
     } else {
-      toast({ title: "¡Cita Agendada!", description: "Hemos recibido tu solicitud." });
+      toast({ title: "¡Cita Agendada!", description: "Hemos recibido tu solicitud. Revisa tu correo para más detalles." });
       form.reset();
+      setIsModalOpen(false);
     }
     setIsSubmitting(false);
   }
+
+  const handleOpenConfirmation = async () => {
+    const isValid = await form.trigger();
+    if (isValid) {
+      setIsModalOpen(true);
+    } else {
+      toast({
+        title: "Formulario incompleto",
+        description: "Por favor, completa todos los campos requeridos antes de continuar.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <>
@@ -125,7 +141,7 @@ const AppointmentPage = () => {
             Completa tus datos y sigue los pasos para encontrar tu cita ideal.
           </p>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
               <Card className="shadow-premium-md">
                 <CardHeader><CardTitle>1. Tus Datos</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
@@ -185,9 +201,8 @@ const AppointmentPage = () => {
                         {format(selectedDate, "eeee, d 'de' MMMM", { locale: es })} a las {selectedTime}
                       </p>
                     </div>
-                    <Button type="submit" size="lg" disabled={isSubmitting}>
-                      {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Confirmar Cita
+                    <Button type="button" size="lg" onClick={handleOpenConfirmation}>
+                      Hacer Reserva
                     </Button>
                   </CardContent>
                 </Card>
@@ -197,6 +212,14 @@ const AppointmentPage = () => {
         </div>
       </div>
       <Footer />
+      <ConfirmationModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onConfirm={form.handleSubmit(handleConfirmAppointment)}
+        appointmentDetails={form.getValues()}
+        doctorName={filteredDoctors.find(d => d.id === form.getValues().doctorId)?.full_name}
+        isSubmitting={isSubmitting}
+      />
     </>
   );
 };
