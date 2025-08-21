@@ -9,8 +9,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/use-toast';
-import { Plus, Edit, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Loader2, UserPlus } from 'lucide-react';
 import { Profile } from '@/types';
+import LoadingSpinner from '@/components/LoadingSpinner';
+import EmptyState from '@/components/EmptyState';
 
 const specialties = ["Consulta General", "Odontología", "Cardiología"];
 
@@ -163,7 +165,11 @@ const DoctoresPage = () => {
   };
 
   if (loading) {
-    return <div className="p-8">Cargando doctores...</div>;
+    return (
+      <div className="p-8 flex justify-center items-center h-96">
+        <LoadingSpinner />
+      </div>
+    );
   }
 
   return (
@@ -256,7 +262,15 @@ const DoctoresPage = () => {
                   </TableRow>
                 ))
               ) : (
-                <TableRow><TableCell colSpan={4} className="text-center py-8 text-muted-foreground">No hay doctores registrados.</TableCell></TableRow>
+                <TableRow>
+                  <TableCell colSpan={4}>
+                    <EmptyState 
+                      icon={<UserPlus className="h-8 w-8 text-muted-foreground" />}
+                      title="No hay doctores registrados"
+                      description="Crea un nuevo doctor para empezar a gestionar sus citas y pacientes."
+                    />
+                  </TableCell>
+                </TableRow>
               )}
             </TableBody>
           </Table>

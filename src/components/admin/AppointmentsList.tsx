@@ -8,8 +8,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { Appointment, Profile } from '@/types';
-import { Edit } from 'lucide-react';
+import { Edit, CalendarOff } from 'lucide-react';
 import AppointmentEditModal from './AppointmentEditModal';
+import LoadingSpinner from '@/components/LoadingSpinner';
+import EmptyState from '@/components/EmptyState';
 
 const AppointmentsList = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -85,8 +87,8 @@ const AppointmentsList = () => {
         <CardHeader>
           <CardTitle>Citas para Hoy</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="text-center py-4">Cargando citas...</div>
+        <CardContent className="flex justify-center items-center h-64">
+          <LoadingSpinner />
         </CardContent>
       </Card>
     );
@@ -157,7 +159,13 @@ const AppointmentsList = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center">No hay citas para hoy.</TableCell>
+                  <TableCell colSpan={6}>
+                    <EmptyState 
+                      icon={<CalendarOff className="h-8 w-8 text-muted-foreground" />}
+                      title="No hay citas para hoy"
+                      description="No hay citas programadas para la fecha de hoy."
+                    />
+                  </TableCell>
                 </TableRow>
               )}
             </TableBody>

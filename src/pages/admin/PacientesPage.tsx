@@ -7,10 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/use-toast';
-import { Plus, Edit, Trash2, Eye } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, Users } from 'lucide-react';
 import { Patient } from '@/types';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import LoadingSpinner from '@/components/LoadingSpinner';
+import EmptyState from '@/components/EmptyState';
 
 const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
@@ -130,7 +132,11 @@ const PacientesPage = () => {
   };
 
   if (loading) {
-    return <div className="p-8">Cargando pacientes...</div>;
+    return (
+      <div className="p-8 flex justify-center items-center h-96">
+        <LoadingSpinner />
+      </div>
+    );
   }
 
   return (
@@ -213,27 +219,39 @@ const PacientesPage = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {patients.map((patient) => (
-                <TableRow key={patient.id}>
-                  <TableCell className="font-medium">{patient.full_name}</TableCell>
-                  <TableCell>{patient.id_number || 'N/A'}</TableCell>
-                  <TableCell>{patient.email}</TableCell>
-                  <TableCell>{patient.phone || 'N/A'}</TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button asChild size="sm" variant="outline">
-                        <Link to={`/admin/pacientes/${patient.id}`}><Eye className="h-4 w-4" /></Link>
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => handleEdit(patient)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button size="sm" variant="destructive" onClick={() => handleDelete(patient.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+              {patients.length > 0 ? (
+                patients.map((patient) => (
+                  <TableRow key={patient.id}>
+                    <TableCell className="font-medium">{patient.full_name}</TableCell>
+                    <TableCell>{patient.id_number || 'N/A'}</TableCell>
+                    <TableCell>{patient.email}</TableCell>
+                    <TableCell>{patient.phone || 'N/A'}</TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <Button asChild size="sm" variant="outline">
+                          <Link to={`/admin/pacientes/${patient.id}`}><Eye className="h-4 w-4" /></Link>
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => handleEdit(patient)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="destructive" onClick={() => handleDelete(patient.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={5}>
+                    <EmptyState 
+                      icon={<Users className="h-8 w-8 text-muted-foreground" />}
+                      title="No hay pacientes registrados"
+                      description="Añade un nuevo paciente para ver su información aquí."
+                    />
                   </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </CardContent>
