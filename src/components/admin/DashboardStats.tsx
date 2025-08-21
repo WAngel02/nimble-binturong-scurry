@@ -1,115 +1,80 @@
-import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, CalendarX, CalendarCheck } from 'lucide-react';
-import { startOfDay, endOfDay, addDays, startOfMonth, endOfMonth } from 'date-fns';
+import { Users, CalendarCheck, Activity } from 'lucide-react';
+import { LineChart, Line, ResponsiveContainer, Tooltip } from 'recharts';
+
+const statData = [
+  {
+    title: 'Patient',
+    value: '1,273',
+    increase: '+86',
+    description: 'Patient increase of 6% in 7 days',
+    icon: <Users className="h-6 w-6 text-blue-500" />,
+    chartData: [
+      { v: 10 }, { v: 15 }, { v: 12 }, { v: 18 }, { v: 20 }, { v: 17 }, { v: 22 },
+    ],
+    chartColor: '#3b82f6',
+  },
+  {
+    title: 'Appointment',
+    value: '1,003',
+    increase: '+120',
+    description: 'Appointment increase of 12% in 7 days',
+    icon: <CalendarCheck className="h-6 w-6 text-green-500" />,
+    chartData: [
+      { v: 12 }, { v: 10 }, { v: 14 }, { v: 13 }, { v: 19 }, { v: 21 }, { v: 25 },
+    ],
+    chartColor: '#22c55e',
+  },
+  {
+    title: 'Total Visitors',
+    value: '2,872',
+    increase: '+206',
+    description: 'Total visitor increase of 7% in 7 days',
+    icon: <Activity className="h-6 w-6 text-yellow-500" />,
+    chartData: [
+      { v: 15 }, { v: 13 }, { v: 16 }, { v: 14 }, { v: 18 }, { v: 15 }, { v: 20 },
+    ],
+    chartColor: '#eab308',
+  },
+];
+
+const StatCard = ({ title, value, increase, description, icon, chartData, chartColor }: typeof statData[0]) => (
+  <Card className="shadow-md transition-all hover:shadow-lg hover:-translate-y-1">
+    <CardHeader className="pb-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <div className="p-2 bg-muted rounded-lg">{icon}</div>
+          <CardTitle className="text-base font-medium">{title}</CardTitle>
+        </div>
+      </div>
+    </CardHeader>
+    <CardContent>
+      <div className="flex items-end justify-between">
+        <div>
+          <p className="text-3xl font-bold">{value}</p>
+          <p className="text-xs text-muted-foreground">{description}</p>
+        </div>
+        <div className="w-28 h-12">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData}>
+              <Tooltip
+                contentStyle={{ display: 'none' }}
+                wrapperStyle={{ display: 'none' }}
+              />
+              <Line type="monotone" dataKey="v" stroke={chartColor} strokeWidth={2} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
 
 const DashboardStats = () => {
-  const [stats, setStats] = useState({
-    next7Days: 0,
-    cancelled: 0,
-    attendedThisMonth: 0,
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const now = new Date();
-        
-        const todayStart = startOfDay(now).toISOString();
-        const next7DaysEnd = endOfDay(addDays(now, 7)).toISOString();
-        const monthStart = startOfMonth(now).toISOString();
-        const monthEnd = endOfMonth(now).toISOString();
-
-        const { count: next7DaysCount, error: next7DaysError } = await supabase
-          .from('appointments')
-          .select('*', { count: 'exact', head: true })
-          .gte('appointment_date', todayStart)
-          .lte('appointment_date', next7DaysEnd);
-
-        if (next7DaysError) throw next7DaysError;
-
-        const { count: cancelledCount, error: cancelledError } = await supabase
-          .from('appointments')
-          .select('*', { count: 'exact', head: true })
-          .eq('status', 'cancelled')
-          .gte('appointment_date', monthStart)
-          .lte('appointment_date', monthEnd);
-
-        if (cancelledError) throw cancelledError;
-
-        const { count: attendedCount, error: attendedError } = await supabase
-          .from('appointments')
-          .select('*', { count: 'exact', head: true })
-          .eq('status', 'confirmed')
-          .gte('appointment_date', monthStart)
-          .lte('appointment_date', monthEnd);
-
-        if (attendedError) throw attendedError;
-
-        setStats({
-          next7Days: next7DaysCount ?? 0,
-          cancelled: cancelledCount ?? 0,
-          attendedThisMonth: attendedCount ?? 0,
-        });
-      } catch (err) {
-        console.error('Error fetching stats:', err);
-        setError('Error al cargar las estadísticas');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStats();
-  }, []);
-
-  const statCards = [
-    { title: 'Próximos 7 Días', value: stats.next7Days, icon: <CalendarCheck className="h-6 w-6 text-muted-foreground" /> },
-    { title: 'Citas Canceladas (Mes)', value: stats.cancelled, icon: <CalendarX className="h-6 w-6 text-muted-foreground" /> },
-    { title: 'Pacientes Atendidos (Mes)', value: stats.attendedThisMonth, icon: <Users className="h-6 w-6 text-muted-foreground" /> },
-  ];
-
-  if (loading) {
-    return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {[1, 2, 3].map((i) => (
-          <Card key={i} className="shadow-premium-md">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Cargando...</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">-</div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-4 bg-red-50 border border-red-200 rounded-md">
-        <p className="text-red-800">{error}</p>
-      </div>
-    );
-  }
-
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {statCards.map((card, index) => (
-        <Card key={index} className="shadow-premium-md transition-all hover:shadow-premium-lg hover:-translate-y-1">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
-            {card.icon}
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{card.value}</div>
-          </CardContent>
-        </Card>
+      {statData.map((stat, index) => (
+        <StatCard key={index} {...stat} />
       ))}
     </div>
   );

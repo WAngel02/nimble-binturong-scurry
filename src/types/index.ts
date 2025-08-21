@@ -10,6 +10,7 @@ export interface Appointment {
   created_at: string;
   patient_id?: string;
   doctor_id?: string;
+  doctor?: { full_name: string };
 }
 
 export interface Profile {

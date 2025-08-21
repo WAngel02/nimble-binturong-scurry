@@ -1,35 +1,33 @@
 import DashboardStats from '@/components/admin/DashboardStats';
-import AppointmentsList from '@/components/admin/AppointmentsList';
-import AppointmentCalendar from '@/components/admin/AppointmentCalendar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import AppointmentsWidget from '@/components/admin/AppointmentsWidget';
+import PatientChart from '@/components/admin/PatientChart';
 
 const AdminDashboard = () => {
   return (
-    <div className="py-8 px-4 sm:px-6 lg:px-8 space-y-8">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-8 bg-gray-50/50">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Panel de Administración</h1>
-        <p className="text-muted-foreground">Una vista general de la actividad de tu centro médico.</p>
+        <h1 className="text-2xl font-bold text-gray-900">Overview</h1>
+        <p className="text-muted-foreground text-sm">
+          Access a detailed overview of key metrics and patient outcomes.
+        </p>
       </div>
       
       <DashboardStats />
       
-      <Tabs defaultValue="calendar" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="calendar">Vista Calendario</TabsTrigger>
-          <TabsTrigger value="list">Lista de Citas</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="calendar" className="space-y-4">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Calendario de Citas</h2>
-            <AppointmentCalendar />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2">
+          <PatientChart />
+        </div>
+        <div className="lg:col-span-1">
+          {/* Placeholder for Most Demanded Chart */}
+          <div className="h-full bg-white rounded-lg shadow-md p-6">
+            <h3 className="font-semibold text-gray-900">Most Demanded</h3>
+            <p className="text-sm text-muted-foreground mt-4 text-center">Radar chart coming soon...</p>
           </div>
-        </TabsContent>
-        
-        <TabsContent value="list" className="space-y-4">
-          <AppointmentsList />
-        </TabsContent>
-      </Tabs>
+        </div>
+      </div>
+
+      <AppointmentsWidget />
     </div>
   );
 };
