@@ -12,19 +12,19 @@ import {
 import { cn } from '@/lib/utils';
 
 const mainNavigation = [
-  { name: 'Overview', href: '/admin/dashboard', icon: LayoutGrid },
-  { name: 'Appointments', href: '/admin/appointments', icon: Calendar },
+  { name: 'Resumen', href: '/admin/dashboard', icon: LayoutGrid },
+  { name: 'Citas', href: '/admin/appointments', icon: Calendar },
 ];
 
 const otherNavigation = [
-  { name: 'Patients', href: '/admin/pacientes', icon: Users },
-  { name: 'Doctors', href: '/admin/doctores', icon: Stethoscope },
-  { name: 'Administration', href: '/admin/administration', icon: Shield },
+  { name: 'Pacientes', href: '/admin/pacientes', icon: Users },
+  { name: 'Doctores', href: '/admin/doctores', icon: Stethoscope },
+  { name: 'Administración', href: '/admin/administration', icon: Shield },
 ];
 
 const helpNavigation = [
-  { name: 'Help & Center', href: '/admin/help', icon: HelpCircle },
-  { name: 'Settings', href: '/admin/settings', icon: Settings },
+  { name: 'Ayuda', href: '/admin/help', icon: HelpCircle },
+  { name: 'Configuración', href: '/admin/settings', icon: Settings },
 ];
 
 const Sidebar = () => {
@@ -65,7 +65,7 @@ const Sidebar = () => {
           <nav className="flex-1 space-y-4">
             <div>
               <h3 className="px-3 text-xs font-semibold uppercase text-sidebar-foreground/60 tracking-wider">
-                Main Menu
+                Menú Principal
               </h3>
               <div className="mt-2 space-y-1">
                 {renderNavLinks(mainNavigation)}
@@ -73,7 +73,7 @@ const Sidebar = () => {
             </div>
             <div>
               <h3 className="px-3 text-xs font-semibold uppercase text-sidebar-foreground/60 tracking-wider">
-                Other Menu
+                Gestión
               </h3>
               <div className="mt-2 space-y-1">
                 {renderNavLinks(otherNavigation)}
@@ -81,7 +81,7 @@ const Sidebar = () => {
             </div>
             <div>
               <h3 className="px-3 text-xs font-semibold uppercase text-sidebar-foreground/60 tracking-wider">
-                Help & Settings
+                Soporte
               </h3>
               <div className="mt-2 space-y-1">
                 {renderNavLinks(helpNavigation)}

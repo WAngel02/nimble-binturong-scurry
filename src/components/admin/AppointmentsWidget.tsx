@@ -35,25 +35,25 @@ const AppointmentsWidget = () => {
   }, []);
 
   const statusMap: { [key: string]: { text: string; variant: 'secondary' | 'default' | 'destructive' } } = {
-    pending: { text: 'Pending', variant: 'secondary' },
-    confirmed: { text: 'Confirmed', variant: 'default' },
-    cancelled: { text: 'Cancelled', variant: 'destructive' },
+    pending: { text: 'Pendiente', variant: 'secondary' },
+    confirmed: { text: 'Confirmada', variant: 'default' },
+    cancelled: { text: 'Cancelada', variant: 'destructive' },
   };
 
   return (
     <Card className="shadow-md">
       <CardHeader>
-        <CardTitle>Appointment</CardTitle>
+        <CardTitle>Citas Recientes</CardTitle>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Patient Name</TableHead>
-              <TableHead>Appointment Date & Time</TableHead>
-              <TableHead>Treatment Types</TableHead>
-              <TableHead>Doctor Name</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>Paciente</TableHead>
+              <TableHead>Fecha y Hora</TableHead>
+              <TableHead>Especialidad</TableHead>
+              <TableHead>Doctor</TableHead>
+              <TableHead>Estado</TableHead>
               <TableHead></TableHead>
             </TableRow>
           </TableHeader>
@@ -77,7 +77,7 @@ const AppointmentsWidget = () => {
                       <AvatarImage src={`https://api.dicebear.com/8.x/avataaars/svg?seed=${(appointment.doctor as any)?.full_name}`} />
                       <AvatarFallback>{(appointment.doctor as any)?.full_name?.charAt(0) || 'N'}</AvatarFallback>
                     </Avatar>
-                    <span>{(appointment.doctor as any)?.full_name || 'Not Assigned'}</span>
+                    <span>{(appointment.doctor as any)?.full_name || 'No Asignado'}</span>
                   </div>
                 </TableCell>
                 <TableCell>

@@ -6,9 +6,9 @@ const AdminDashboard = () => {
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-8 bg-gray-50/50">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Overview</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Resumen General</h1>
         <p className="text-muted-foreground text-sm">
-          Access a detailed overview of key metrics and patient outcomes.
+          Accede a un resumen detallado de las métricas clave y resultados de pacientes.
         </p>
       </div>
       
@@ -21,8 +21,8 @@ const AdminDashboard = () => {
         <div className="lg:col-span-1">
           {/* Placeholder for Most Demanded Chart */}
           <div className="h-full bg-white rounded-lg shadow-md p-6">
-            <h3 className="font-semibold text-gray-900">Most Demanded</h3>
-            <p className="text-sm text-muted-foreground mt-4 text-center">Radar chart coming soon...</p>
+            <h3 className="font-semibold text-gray-900">Especialidades más Solicitadas</h3>
+            <p className="text-sm text-muted-foreground mt-4 text-center">Gráfico de radar próximamente...</p>
           </div>
         </div>
       </div>
