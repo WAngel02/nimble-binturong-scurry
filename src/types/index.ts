@@ -18,7 +18,7 @@ export interface Profile {
   full_name?: string;
   role: 'admin' | 'doctor';
   updated_at: string;
-  specialty?: string;
+  specialties?: string[];
   phone?: string;
   address?: string;
   email?: string;

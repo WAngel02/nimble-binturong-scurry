@@ -3,7 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -13,8 +12,10 @@ import { Plus, Edit, Trash2, Loader2, UserPlus } from 'lucide-react';
 import { Profile } from '@/types';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import EmptyState from '@/components/EmptyState';
+import { MultiSelect } from '@/components/ui/multi-select';
 
-const specialties = ["Consulta General", "Odontología", "Cardiología"];
+const specialties = ["Consulta General", "Odontología", "Cardiología", "Pediatría", "Traumatología", "Psicología"];
+const specialtyOptions = specialties.map(s => ({ value: s, label: s }));
 
 const DoctoresPage = () => {
   const [doctors, setDoctors] = useState<Profile[]>([]);
@@ -24,7 +25,7 @@ const DoctoresPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     full_name: '',
-    specialty: '',
+    specialties: [] as string[],
     email: '',
     password: '',
     phone: '',
@@ -37,7 +38,10 @@ const DoctoresPage = () => {
 
   const fetchDoctors = async () => {
     setLoading(true);
-    const { data, error } = await supabase.rpc('get_doctors_with_email');
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, full_name, specialties, phone, address, updated_at, role')
+      .eq('role', 'doctor');
 
     if (error) {
       console.error('Error fetching doctors:', error);
@@ -58,7 +62,7 @@ const DoctoresPage = () => {
           .from('profiles')
           .update({
             full_name: formData.full_name,
-            specialty: formData.specialty,
+            specialties: formData.specialties,
             phone: formData.phone,
             address: formData.address
           })
@@ -95,7 +99,7 @@ const DoctoresPage = () => {
             email: formData.email,
             password: formData.password,
             full_name: formData.full_name,
-            specialty: formData.specialty,
+            specialties: formData.specialties,
             phone: formData.phone,
             address: formData.address
           }),
@@ -121,8 +125,8 @@ const DoctoresPage = () => {
     setEditingDoctor(doctor);
     setFormData({
       full_name: doctor.full_name || '',
-      specialty: doctor.specialty || '',
-      email: doctor.email || '',
+      specialties: doctor.specialties || [],
+      email: '',
       password: '',
       phone: doctor.phone || '',
       address: doctor.address || ''
@@ -159,7 +163,7 @@ const DoctoresPage = () => {
   };
 
   const resetForm = () => {
-    setFormData({ full_name: '', specialty: '', email: '', password: '', phone: '', address: '' });
+    setFormData({ full_name: '', specialties: [], email: '', password: '', phone: '', address: '' });
     setEditingDoctor(null);
     setIsDialogOpen(false);
   };
@@ -205,16 +209,18 @@ const DoctoresPage = () => {
                   <Input id="phone" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} disabled={submitting} />
                 </div>
                 <div>
-                  <Label htmlFor="specialty">Especialidad</Label>
-                  <Select value={formData.specialty} onValueChange={(value) => setFormData({ ...formData, specialty: value })} disabled={submitting}>
-                    <SelectTrigger><SelectValue placeholder="Selecciona una especialidad" /></SelectTrigger>
-                    <SelectContent>{specialties.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-                  </Select>
+                  <Label htmlFor="address">Dirección</Label>
+                  <Input id="address" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} disabled={submitting} />
                 </div>
               </div>
               <div>
-                <Label htmlFor="address">Dirección</Label>
-                <Input id="address" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} disabled={submitting} />
+                <Label htmlFor="specialties">Especialidades</Label>
+                <MultiSelect
+                  options={specialtyOptions}
+                  selected={formData.specialties}
+                  onChange={(selected) => setFormData({ ...formData, specialties: selected })}
+                  placeholder="Selecciona especialidades..."
+                />
               </div>
               {!editingDoctor && (
                 <div>
@@ -241,8 +247,7 @@ const DoctoresPage = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Nombre</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Especialidad</TableHead>
+                <TableHead>Especialidades</TableHead>
                 <TableHead>Acciones</TableHead>
               </TableRow>
             </TableHeader>
@@ -251,8 +256,11 @@ const DoctoresPage = () => {
                 doctors.map((doctor) => (
                   <TableRow key={doctor.id}>
                     <TableCell className="font-medium">{doctor.full_name}</TableCell>
-                    <TableCell>{doctor.email}</TableCell>
-                    <TableCell><Badge variant="secondary">{doctor.specialty || 'N/A'}</Badge></TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {doctor.specialties?.map(s => <Badge key={s} variant="secondary">{s}</Badge>) || 'N/A'}
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
                         <Button size="sm" variant="outline" onClick={() => handleEdit(doctor)}><Edit className="h-4 w-4" /></Button>
@@ -263,7 +271,7 @@ const DoctoresPage = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={4}>
+                  <TableCell colSpan={3}>
                     <EmptyState 
                       icon={<UserPlus className="h-8 w-8 text-muted-foreground" />}
                       title="No hay doctores registrados"

@@ -103,7 +103,7 @@ const AddAppointmentModal = ({
   useEffect(() => {
     if (selectedSpecialty) {
       const filtered = doctors.filter(
-        (doc) => doc.specialty === selectedSpecialty || !doc.specialty
+        (doc) => doc.specialties?.includes(selectedSpecialty)
       );
       setFilteredDoctors(filtered);
     } else {

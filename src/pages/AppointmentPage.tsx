@@ -33,7 +33,7 @@ const appointmentFormSchema = z.object({
   phone: z.string().optional(),
   notes: z.string().optional(),
   specialty: z.string({ required_error: "Por favor, selecciona una especialidad." }),
-  doctorId: z.string({ required_error: "Por favor, selecciona un doctor." }),
+  doctorId: z.string().optional(),
   date: z.date({ required_error: "Por favor, selecciona una fecha." }),
   time: z.string({ required_error: "Por favor, selecciona una hora." }),
 });
@@ -47,6 +47,9 @@ const AppointmentPage = () => {
 
   const form = useForm<z.infer<typeof appointmentFormSchema>>({
     resolver: zodResolver(appointmentFormSchema),
+    defaultValues: {
+      doctorId: "",
+    },
   });
 
   const selectedSpecialty = form.watch("specialty");
@@ -59,7 +62,7 @@ const AppointmentPage = () => {
       setLoadingDoctors(true);
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, specialty')
+        .select('id, full_name, specialties')
         .eq('role', 'doctor')
         .order('full_name');
 
@@ -75,7 +78,7 @@ const AppointmentPage = () => {
 
   useEffect(() => {
     if (selectedSpecialty) {
-      const filtered = doctors.filter(doc => doc.specialty === selectedSpecialty || !doc.specialty);
+      const filtered = doctors.filter(doc => doc.specialties?.includes(selectedSpecialty));
       setFilteredDoctors(filtered);
       form.setValue("doctorId", ""); // Reset doctor on specialty change
       form.setValue("date", undefined);
@@ -98,7 +101,7 @@ const AppointmentPage = () => {
       email,
       phone,
       specialty,
-      doctor_id: doctorId,
+      doctor_id: doctorId || null,
       appointment_date: appointmentDateTime.toISOString(),
       notes,
     });
@@ -170,7 +173,7 @@ const AppointmentPage = () => {
                     )} />
                   )}
 
-                  {selectedDoctorId && (
+                  {selectedDoctorId !== undefined && (
                     <FormField control={form.control} name="date" render={({ field: dateField }) => (
                       <FormField control={form.control} name="time" render={({ field: timeField }) => (
                         <FormItem><FormControl>

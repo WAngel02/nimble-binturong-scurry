@@ -48,7 +48,7 @@ const AppointmentEditModal = ({ appointment, isOpen, onClose, onUpdate }: Appoin
         .from('profiles')
         .select('*')
         .eq('role', 'doctor')
-        .or(`specialty.eq.${appointment.specialty},specialty.is.null`);
+        .or(`specialties.cs.{${appointment.specialty}},specialties.is.null`);
       
       if (error) {
         toast({ title: 'Error', description: 'No se pudieron cargar los doctores.', variant: 'destructive' });

@@ -36,7 +36,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Solo los administradores pueden crear doctores' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    const { email, password, full_name, specialty, phone, address } = await req.json()
+    const { email, password, full_name, specialties, phone, address } = await req.json()
 
     if (!email || !password || !full_name) {
       return new Response(JSON.stringify({ error: 'Email, contraseña y nombre son requeridos' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
@@ -57,7 +57,7 @@ serve(async (req) => {
 
     const profileData = {
       full_name,
-      specialty: specialty || null,
+      specialties: specialties || [],
       role: 'doctor',
       phone: phone || null,
       address: address || null
