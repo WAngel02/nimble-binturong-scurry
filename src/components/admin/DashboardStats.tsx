@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Calendar, CalendarX, CalendarCheck } from 'lucide-react';
+import { Users, CalendarX, CalendarCheck } from 'lucide-react';
 import { startOfDay, endOfDay, addDays, startOfMonth, endOfMonth } from 'date-fns';
 
 const DashboardStats = () => {
   const [stats, setStats] = useState({
-    today: 0,
     next7Days: 0,
     cancelled: 0,
     attendedThisMonth: 0,
@@ -22,18 +21,9 @@ const DashboardStats = () => {
         const now = new Date();
         
         const todayStart = startOfDay(now).toISOString();
-        const todayEnd = endOfDay(now).toISOString();
         const next7DaysEnd = endOfDay(addDays(now, 7)).toISOString();
         const monthStart = startOfMonth(now).toISOString();
         const monthEnd = endOfMonth(now).toISOString();
-
-        const { count: todayCount, error: todayError } = await supabase
-          .from('appointments')
-          .select('*', { count: 'exact', head: true })
-          .gte('appointment_date', todayStart)
-          .lte('appointment_date', todayEnd);
-
-        if (todayError) throw todayError;
 
         const { count: next7DaysCount, error: next7DaysError } = await supabase
           .from('appointments')
@@ -62,7 +52,6 @@ const DashboardStats = () => {
         if (attendedError) throw attendedError;
 
         setStats({
-          today: todayCount ?? 0,
           next7Days: next7DaysCount ?? 0,
           cancelled: cancelledCount ?? 0,
           attendedThisMonth: attendedCount ?? 0,
@@ -79,7 +68,6 @@ const DashboardStats = () => {
   }, []);
 
   const statCards = [
-    { title: 'Citas del Día', value: stats.today, icon: <Calendar className="h-6 w-6 text-muted-foreground" /> },
     { title: 'Próximos 7 Días', value: stats.next7Days, icon: <CalendarCheck className="h-6 w-6 text-muted-foreground" /> },
     { title: 'Citas Canceladas (Mes)', value: stats.cancelled, icon: <CalendarX className="h-6 w-6 text-muted-foreground" /> },
     { title: 'Pacientes Atendidos (Mes)', value: stats.attendedThisMonth, icon: <Users className="h-6 w-6 text-muted-foreground" /> },
@@ -87,8 +75,8 @@ const DashboardStats = () => {
 
   if (loading) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {[1, 2, 3, 4].map((i) => (
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {[1, 2, 3].map((i) => (
           <Card key={i}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Cargando...</CardTitle>
@@ -111,7 +99,7 @@ const DashboardStats = () => {
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {statCards.map((card, index) => (
         <Card key={index}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

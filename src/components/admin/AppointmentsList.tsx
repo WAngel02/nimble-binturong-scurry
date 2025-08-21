@@ -6,16 +6,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/components/ui/use-toast';
 import { Appointment, Profile } from '@/types';
-import { UserPlus, UserCheck } from 'lucide-react';
+import { Edit } from 'lucide-react';
+import AppointmentEditModal from './AppointmentEditModal';
 
 const AppointmentsList = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [doctors, setDoctors] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const fetchAppointmentsAndDoctors = async () => {
     try {
@@ -56,81 +58,25 @@ const AppointmentsList = () => {
     fetchAppointmentsAndDoctors();
   }, []);
 
-  const handleAssignDoctor = async (appointmentId: string, doctorId: string) => {
-    const { error } = await supabase
-      .from('appointments')
-      .update({ doctor_id: doctorId })
-      .eq('id', appointmentId);
-
-    if (error) {
-      toast({ title: 'Error', description: 'No se pudo asignar el doctor.', variant: 'destructive' });
-    } else {
-      toast({ title: 'Éxito', description: 'Doctor asignado correctamente.' });
-      fetchAppointmentsAndDoctors();
-    }
+  const handleEditClick = (appointment: Appointment) => {
+    setSelectedAppointment(appointment);
+    setIsModalOpen(true);
   };
 
-  const handleCreatePatient = async (appointment: Appointment) => {
-    try {
-      // Verificar si ya existe un paciente con este email
-      const { data: existingPatient, error: checkError } = await supabase
-        .from('patients')
-        .select('id')
-        .eq('email', appointment.email)
-        .maybeSingle();
-
-      if (checkError) {
-        toast({ title: 'Error', description: 'Error al verificar paciente existente.', variant: 'destructive' });
-        return;
-      }
-
-      let patientId;
-
-      if (existingPatient) {
-        patientId = existingPatient.id;
-        toast({ title: 'Info', description: 'El paciente ya existe en el sistema.' });
-      } else {
-        // Crear nuevo paciente
-        const { data: newPatient, error: patientError } = await supabase
-          .from('patients')
-          .insert({ 
-            full_name: appointment.full_name, 
-            email: appointment.email, 
-            phone: appointment.phone 
-          })
-          .select()
-          .single();
-
-        if (patientError) {
-          toast({ title: 'Error', description: 'No se pudo crear el perfil del paciente.', variant: 'destructive' });
-          return;
-        }
-
-        patientId = newPatient.id;
-        toast({ title: 'Éxito', description: 'Paciente creado correctamente.' });
-      }
-
-      // Actualizar la cita
-      const { error: appointmentError } = await supabase
-        .from('appointments')
-        .update({ status: 'confirmed', patient_id: patientId })
-        .eq('id', appointment.id);
-
-      if (appointmentError) {
-        toast({ title: 'Error', description: 'No se pudo actualizar la cita.', variant: 'destructive' });
-      } else {
-        toast({ title: 'Éxito', description: 'Cita confirmada y vinculada al paciente.' });
-        fetchAppointmentsAndDoctors();
-      }
-    } catch (err) {
-      console.error('Error creating patient:', err);
-      toast({ title: 'Error', description: 'Error inesperado al crear el paciente.', variant: 'destructive' });
-    }
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedAppointment(null);
   };
 
   const getDoctorName = (doctorId: string) => {
     const doctor = doctors.find(d => d.id === doctorId);
-    return doctor ? doctor.full_name : 'Doctor no encontrado';
+    return doctor ? doctor.full_name : 'No asignado';
+  };
+
+  const statusMap: { [key: string]: { text: string; variant: 'secondary' | 'default' | 'destructive' } } = {
+    pending: { text: 'Pendiente', variant: 'secondary' },
+    confirmed: { text: 'Confirmada', variant: 'default' },
+    cancelled: { text: 'Cancelada', variant: 'destructive' },
   };
 
   if (loading) {
@@ -160,94 +106,71 @@ const AppointmentsList = () => {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Citas para Hoy ({format(new Date(), 'PPP', { locale: es })})</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Paciente</TableHead>
-              <TableHead>Hora</TableHead>
-              <TableHead>Especialidad</TableHead>
-              <TableHead>Doctor Asignado</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead>Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {appointments.length > 0 ? (
-              appointments.map((appointment) => (
-                <TableRow key={appointment.id}>
-                  <TableCell>
-                    <div className="font-medium">{appointment.full_name}</div>
-                    <div className="text-sm text-muted-foreground">{appointment.email}</div>
-                    {appointment.phone && (
-                      <div className="text-sm text-muted-foreground">{appointment.phone}</div>
-                    )}
-                  </TableCell>
-                  <TableCell>{format(new Date(appointment.appointment_date), 'p', { locale: es })}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{appointment.specialty}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    {appointment.doctor_id ? (
-                      <span className="text-sm font-medium">{getDoctorName(appointment.doctor_id)}</span>
-                    ) : (
-                      <Select onValueChange={(doctorId) => handleAssignDoctor(appointment.id, doctorId)}>
-                        <SelectTrigger className="w-[180px]">
-                          <SelectValue placeholder="Asignar doctor" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {doctors
-                            .filter(doc => doc.specialty === appointment.specialty || !doc.specialty)
-                            .map((doc) => (
-                              <SelectItem key={doc.id} value={doc.id}>
-                                {doc.full_name}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={appointment.status === 'pending' ? 'secondary' : 'default'}>
-                      {appointment.status === 'pending' ? 'Pendiente' : 'Confirmada'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      {appointment.status === 'pending' && (
-                        <Button 
-                          size="sm" 
-                          onClick={() => handleCreatePatient(appointment)}
-                          disabled={!appointment.doctor_id}
-                          className="flex items-center space-x-1"
-                        >
-                          <UserPlus className="h-4 w-4" />
-                          <span>Crear Paciente</span>
-                        </Button>
-                      )}
-                      {appointment.patient_id && (
-                        <Badge variant="outline" className="flex items-center space-x-1">
-                          <UserCheck className="h-3 w-3" />
-                          <span>Paciente Registrado</span>
-                        </Badge>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>Citas para Hoy ({format(new Date(), 'PPP', { locale: es })})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={6} className="text-center">No hay citas para hoy.</TableCell>
+                <TableHead>Paciente</TableHead>
+                <TableHead>Hora</TableHead>
+                <TableHead>Especialidad</TableHead>
+                <TableHead>Doctor Asignado</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead>Acciones</TableHead>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+            </TableHeader>
+            <TableBody>
+              {appointments.length > 0 ? (
+                appointments.map((appointment) => (
+                  <TableRow key={appointment.id}>
+                    <TableCell>
+                      <div className="font-medium">{appointment.full_name}</div>
+                      <div className="text-sm text-muted-foreground">{appointment.email}</div>
+                    </TableCell>
+                    <TableCell>{format(new Date(appointment.appointment_date), 'p', { locale: es })}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{appointment.specialty}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {appointment.doctor_id ? (
+                        <span className="text-sm font-medium">{getDoctorName(appointment.doctor_id)}</span>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">No asignado</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={statusMap[appointment.status]?.variant || 'secondary'}>
+                        {statusMap[appointment.status]?.text || appointment.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Button size="sm" variant="outline" onClick={() => handleEditClick(appointment)}>
+                        <Edit className="h-4 w-4 mr-2" />
+                        Ver/Editar
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center">No hay citas para hoy.</TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+      <AppointmentEditModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        appointment={selectedAppointment}
+        onUpdate={fetchAppointmentsAndDoctors}
+      />
+    </>
   );
 };
 
