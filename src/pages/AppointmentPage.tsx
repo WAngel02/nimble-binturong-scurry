@@ -20,11 +20,11 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import SpecialtySelector from "@/components/booking/SpecialtySelector";
 import DoctorSelector from "@/components/booking/DoctorSelector";
-import TimeSelector from "@/components/booking/TimeSelector";
 import ConfirmationModal from "@/components/booking/ConfirmationModal";
 import { Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { Profile } from "@/types";
 
 const appointmentFormSchema = z.object({
   fullName: z.string().min(3, { message: "El nombre debe tener al menos 3 caracteres." }),
@@ -37,15 +37,9 @@ const appointmentFormSchema = z.object({
   time: z.string({ required_error: "Por favor, selecciona una hora." }),
 });
 
-interface Doctor {
-  id: string;
-  full_name: string;
-  specialty: string;
-}
-
 const AppointmentPage = () => {
-  const [doctors, setDoctors] = useState<Doctor[]>([]);
-  const [filteredDoctors, setFilteredDoctors] = useState<Doctor[]>([]);
+  const [doctors, setDoctors] = useState<Profile[]>([]);
+  const [filteredDoctors, setFilteredDoctors] = useState<Profile[]>([]);
   const [loadingDoctors, setLoadingDoctors] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -71,7 +65,7 @@ const AppointmentPage = () => {
       if (error) {
         toast({ title: 'Error', description: 'No se pudieron cargar los doctores.', variant: 'destructive' });
       } else {
-        setDoctors(data || []);
+        setDoctors(data as Profile[] || []);
       }
       setLoadingDoctors(false);
     };
