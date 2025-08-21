@@ -15,7 +15,7 @@ const Header = () => {
             <Link to="/" className="text-gray-500 hover:text-gray-900">Inicio</Link>
             <a href="/#services" className="text-gray-500 hover:text-gray-900">Servicios</a>
             <a href="/#about-us" className="text-gray-500 hover:text-gray-900">Sobre Nosotros</a>
-            <a href="#" className="text-gray-500 hover:text-gray-900">Contacto</a>
+            <a href="/#contact" className="text-gray-500 hover:text-gray-900">Contacto</a>
           </nav>
           <div className="flex items-center space-x-4">
             <Link to="/agendar-cita">
