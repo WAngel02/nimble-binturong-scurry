@@ -14,6 +14,7 @@ import PacientesPage from "./pages/admin/PacientesPage";
 import PatientProfilePage from "./pages/admin/PatientProfilePage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminLayout from "./components/admin/AdminLayout";
+import UnderConstruction from "./pages/UnderConstruction";
 
 const queryClient = new QueryClient();
 
@@ -67,6 +68,48 @@ const App = () => (
                 <ProtectedRoute allowedRoles={['admin']}>
                   <AdminLayout>
                     <PatientProfilePage />
+                  </AdminLayout>
+                </ProtectedRoute>
+              } 
+            />
+
+            {/* Under Construction Routes */}
+            <Route 
+              path="/admin/appointments" 
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'doctor']}>
+                  <AdminLayout>
+                    <UnderConstruction />
+                  </AdminLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/administration" 
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminLayout>
+                    <UnderConstruction />
+                  </AdminLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/help" 
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'doctor']}>
+                  <AdminLayout>
+                    <UnderConstruction />
+                  </AdminLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/settings" 
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'doctor']}>
+                  <AdminLayout>
+                    <UnderConstruction />
                   </AdminLayout>
                 </ProtectedRoute>
               } 
