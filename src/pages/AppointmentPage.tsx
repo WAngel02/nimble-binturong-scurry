@@ -20,6 +20,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import SpecialtySelector from "@/components/booking/SpecialtySelector";
 import DoctorSelector from "@/components/booking/DoctorSelector";
+import TimeSelector from "@/components/booking/TimeSelector";
 import ConfirmationModal from "@/components/booking/ConfirmationModal";
 import { Loader2 } from "lucide-react";
 import { format } from "date-fns";
