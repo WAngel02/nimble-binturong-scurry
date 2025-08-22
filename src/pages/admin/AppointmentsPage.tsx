@@ -23,16 +23,31 @@ const AppointmentsPage = () => {
     const fetchAppointments = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase
+        const { data: appointmentsData, error: appointmentsError } = await supabase
           .from('appointments')
-          .select('*, doctor:profiles(full_name)')
+          .select('*')
           .order('appointment_date', { ascending: false });
 
-        if (error) {
-          throw error;
-        }
-        
-        setAppointments(data as Appointment[]);
+        if (appointmentsError) throw appointmentsError;
+
+        const { data: doctorsData, error: doctorsError } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .eq('role', 'doctor');
+
+        if (doctorsError) throw doctorsError;
+
+        const doctorMap = new Map(doctorsData.map(doc => [doc.id, doc.full_name]));
+
+        const appointmentsWithDoctors = appointmentsData.map(apt => {
+          const doctorName = apt.doctor_id ? doctorMap.get(apt.doctor_id) : undefined;
+          return {
+            ...apt,
+            doctor: doctorName ? { full_name: doctorName } : undefined,
+          };
+        });
+
+        setAppointments(appointmentsWithDoctors as Appointment[]);
       } catch (error: any) {
         console.error('Error fetching appointments:', error);
         toast({ title: 'Error', description: 'No se pudieron cargar las citas.', variant: 'destructive' });
