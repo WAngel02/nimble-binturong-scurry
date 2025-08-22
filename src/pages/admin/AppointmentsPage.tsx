@@ -23,29 +23,16 @@ const AppointmentsPage = () => {
     const fetchAppointments = async () => {
       setLoading(true);
       try {
-        const { data: doctorsData, error: doctorsError } = await supabase
-          .from('profiles')
-          .select('id, full_name')
-          .eq('role', 'doctor');
-        
-        if (doctorsError) throw doctorsError;
-        const doctorMap = new Map(doctorsData?.map(d => [d.id, d.full_name]));
-
         const { data, error } = await supabase
           .from('appointments')
-          .select('*')
+          .select('*, doctor:profiles(full_name)')
           .order('appointment_date', { ascending: false });
 
         if (error) {
           throw error;
         }
         
-        const appointmentsWithDoctors = data.map(apt => ({
-          ...apt,
-          doctor: apt.doctor_id ? { full_name: doctorMap.get(apt.doctor_id) } : null
-        }));
-
-        setAppointments(appointmentsWithDoctors as any);
+        setAppointments(data as Appointment[]);
       } catch (error: any) {
         console.error('Error fetching appointments:', error);
         toast({ title: 'Error', description: 'No se pudieron cargar las citas.', variant: 'destructive' });
@@ -107,10 +94,10 @@ const AppointmentsPage = () => {
                   <TableCell>
                     <div className="flex items-center space-x-3">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={`https://api.dicebear.com/8.x/avataaars/svg?seed=${(appointment.doctor as any)?.full_name}`} />
-                        <AvatarFallback>{(appointment.doctor as any)?.full_name?.charAt(0) || 'N'}</AvatarFallback>
+                        <AvatarImage src={`https://api.dicebear.com/8.x/avataaars/svg?seed=${appointment.doctor?.full_name}`} />
+                        <AvatarFallback>{appointment.doctor?.full_name?.charAt(0) || 'N'}</AvatarFallback>
                       </Avatar>
-                      <span>{(appointment.doctor as any)?.full_name || 'No Asignado'}</span>
+                      <span>{appointment.doctor?.full_name || 'No Asignado'}</span>
                     </div>
                   </TableCell>
                   <TableCell>
