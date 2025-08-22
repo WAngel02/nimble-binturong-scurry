@@ -24,7 +24,7 @@ const AppointmentCalendar = () => {
     try {
       const { data: doctorsData, error: doctorsError } = await supabase
         .from('profiles')
-        .select('id, full_name, specialty')
+        .select('id, full_name, specialties')
         .eq('role', 'doctor');
 
       if (doctorsError) {
