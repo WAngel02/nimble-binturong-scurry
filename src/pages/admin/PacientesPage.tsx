@@ -38,22 +38,26 @@ const PacientesPage = () => {
 
   const fetchPatients = async (searchTerm: string | null) => {
     setLoading(true);
-    let query = supabase
-      .from('patients')
-      .select('*');
+    try {
+      let query = supabase
+        .from('patients')
+        .select('*');
 
-    if (searchTerm) {
-      query = query.or(`full_name.ilike.%${searchTerm}%,id_number.ilike.%${searchTerm}%`);
-    }
+      if (searchTerm) {
+        query = query.or(`full_name.ilike.%${searchTerm}%,id_number.ilike.%${searchTerm}%`);
+      }
 
-    const { data, error } = await query.order('full_name');
+      const { data, error } = await query.order('full_name');
 
-    if (error) {
-      toast({ title: 'Error', description: 'No se pudieron cargar los pacientes.', variant: 'destructive' });
-    } else {
+      if (error) {
+        throw error;
+      }
       setPatients(data as Patient[]);
+    } catch (error: any) {
+      toast({ title: 'Error', description: 'No se pudieron cargar los pacientes.', variant: 'destructive' });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

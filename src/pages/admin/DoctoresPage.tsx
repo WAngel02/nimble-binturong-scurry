@@ -38,18 +38,22 @@ const DoctoresPage = () => {
 
   const fetchDoctors = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, full_name, specialties, phone, address, updated_at, role')
-      .eq('role', 'doctor');
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, specialties, phone, address, updated_at, role')
+        .eq('role', 'doctor');
 
-    if (error) {
+      if (error) {
+        throw error;
+      }
+      setDoctors(data as Profile[]);
+    } catch (error: any) {
       console.error('Error fetching doctors:', error);
       toast({ title: 'Error', description: 'No se pudieron cargar los doctores: ' + error.message, variant: 'destructive' });
-    } else {
-      setDoctors(data as Profile[]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
