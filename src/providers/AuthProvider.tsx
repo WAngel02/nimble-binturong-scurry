@@ -58,72 +58,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    let isMounted = true;
+    setLoading(true);
 
-    const setData = async () => {
-      try {
-        setLoading(true);
-        
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Error getting session:', error);
-          if (isMounted) {
-            setSession(null);
-            setProfile(null);
-            setLoading(false);
-          }
-          return;
-        }
-        
-        if (isMounted) {
-          setSession(session);
-        }
-        
-        if (session && isMounted) {
-          const profileData = await fetchProfile(session.user.id);
-          if (isMounted) {
-            setProfile(profileData);
-          }
-        } else if (isMounted) {
-          setProfile(null);
-        }
-      } catch (err) {
-        console.error('Unexpected error in setData:', err);
-        if (isMounted) {
-          setSession(null);
-          setProfile(null);
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    setData();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!isMounted) return;
-      
-      console.log('Auth state changed:', event, session?.user?.email);
-      
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
-      
       if (session) {
-        const profileData = await fetchProfile(session.user.id);
-        if (isMounted) {
-          setProfile(profileData);
-        }
+        const profile = await fetchProfile(session.user.id);
+        setProfile(profile);
       } else {
-        if (isMounted) {
-          setProfile(null);
-        }
+        setProfile(null);
       }
+      setLoading(false);
     });
 
     return () => {
-      isMounted = false;
       subscription.unsubscribe();
     };
   }, []);
