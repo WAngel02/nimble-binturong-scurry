@@ -7,14 +7,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import AppointmentDetailsModal from './AppointmentDetailsModal';
 import AddAppointmentModal from './AddAppointmentModal';
-import { Profile } from '@/types';
+import { Appointment, Profile } from '@/types';
 
 const DOCTOR_COLORS = ['#4A90E2', '#50E3C2', '#F5A623', '#F8E71C', '#D0021B', '#9013FE', '#7ED321', '#BD10E0'];
 
 const AppointmentCalendar = () => {
   const [events, setEvents] = useState([]);
   const [doctors, setDoctors] = useState<Profile[]>([]);
-  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -63,12 +63,7 @@ const AppointmentCalendar = () => {
         backgroundColor: apt.doctor_id ? colors.get(apt.doctor_id) : '#808080',
         borderColor: apt.doctor_id ? colors.get(apt.doctor_id) : '#808080',
         extendedProps: {
-          specialty: apt.specialty,
-          status: apt.status,
-          notes: apt.notes,
-          doctorName: apt.doctor_id ? doctorNames.get(apt.doctor_id) : 'No asignado',
-          email: apt.email,
-          phone: apt.phone,
+          ...apt
         },
       }));
       
@@ -84,7 +79,12 @@ const AppointmentCalendar = () => {
   }, [fetchAppointmentsAndDoctors]);
 
   const handleEventClick = (clickInfo: any) => {
-    setSelectedAppointment(clickInfo.event);
+    const eventProps = clickInfo.event.extendedProps;
+    const appointmentForModal: Appointment = {
+      ...eventProps,
+      doctor: { full_name: eventProps.doctorName || 'No asignado' }
+    };
+    setSelectedAppointment(appointmentForModal);
     setIsDetailsModalOpen(true);
   };
 

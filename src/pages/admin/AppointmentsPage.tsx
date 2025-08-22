@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -7,61 +7,117 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Appointment } from '@/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MoreHorizontal, Calendar, List } from 'lucide-react';
+import { MoreHorizontal, Calendar, List, Eye, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AppointmentCalendar from '@/components/admin/AppointmentCalendar';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import EmptyState from '@/components/EmptyState';
 import { toast } from '@/components/ui/use-toast';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import AppointmentEditModal from '@/components/admin/AppointmentEditModal';
+import AppointmentDetailsModal from '@/components/admin/AppointmentDetailsModal';
 
 const AppointmentsPage = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<'list' | 'calendar'>('list');
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  const fetchAppointments = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data: appointmentsData, error: appointmentsError } = await supabase
+        .from('appointments')
+        .select('*')
+        .order('appointment_date', { ascending: false });
+
+      if (appointmentsError) throw appointmentsError;
+
+      const { data: doctorsData, error: doctorsError } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .eq('role', 'doctor');
+
+      if (doctorsError) throw doctorsError;
+
+      const doctorMap = new Map(doctorsData.map(doc => [doc.id, doc.full_name]));
+
+      const appointmentsWithDoctors = appointmentsData.map(apt => {
+        const doctorName = apt.doctor_id ? doctorMap.get(apt.doctor_id) : undefined;
+        return {
+          ...apt,
+          doctor: doctorName ? { full_name: doctorName } : undefined,
+        };
+      });
+
+      setAppointments(appointmentsWithDoctors as Appointment[]);
+    } catch (error: any) {
+      console.error('Error fetching appointments:', error);
+      toast({ title: 'Error', description: 'No se pudieron cargar las citas.', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchAppointments = async () => {
-      setLoading(true);
-      try {
-        const { data: appointmentsData, error: appointmentsError } = await supabase
-          .from('appointments')
-          .select('*')
-          .order('appointment_date', { ascending: false });
-
-        if (appointmentsError) throw appointmentsError;
-
-        const { data: doctorsData, error: doctorsError } = await supabase
-          .from('profiles')
-          .select('id, full_name')
-          .eq('role', 'doctor');
-
-        if (doctorsError) throw doctorsError;
-
-        const doctorMap = new Map(doctorsData.map(doc => [doc.id, doc.full_name]));
-
-        const appointmentsWithDoctors = appointmentsData.map(apt => {
-          const doctorName = apt.doctor_id ? doctorMap.get(apt.doctor_id) : undefined;
-          return {
-            ...apt,
-            doctor: doctorName ? { full_name: doctorName } : undefined,
-          };
-        });
-
-        setAppointments(appointmentsWithDoctors as Appointment[]);
-      } catch (error: any) {
-        console.error('Error fetching appointments:', error);
-        toast({ title: 'Error', description: 'No se pudieron cargar las citas.', variant: 'destructive' });
-      } finally {
-        setLoading(false);
-      }
-    };
-
     if (view === 'list') {
       fetchAppointments();
     } else {
       setLoading(false);
     }
-  }, [view]);
+  }, [view, fetchAppointments]);
+
+  const handleView = (appointment: Appointment) => {
+    setSelectedAppointment(appointment);
+    setIsDetailsModalOpen(true);
+  };
+
+  const handleEdit = (appointment: Appointment) => {
+    setSelectedAppointment(appointment);
+    setIsEditModalOpen(true);
+  };
+
+  const handleDelete = (appointment: Appointment) => {
+    setSelectedAppointment(appointment);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!selectedAppointment) return;
+    const { error } = await supabase
+      .from('appointments')
+      .delete()
+      .eq('id', selectedAppointment.id);
+
+    if (error) {
+      toast({ title: 'Error', description: 'No se pudo eliminar la cita.', variant: 'destructive' });
+    } else {
+      toast({ title: 'Éxito', description: 'Cita eliminada correctamente.' });
+      fetchAppointments();
+    }
+    setIsDeleteDialogOpen(false);
+    setSelectedAppointment(null);
+  };
 
   const statusMap: { [key: string]: { text: string; variant: 'secondary' | 'default' | 'destructive' } } = {
     pending: { text: 'Pendiente', variant: 'secondary' },
@@ -121,9 +177,29 @@ const AppointmentsPage = () => {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => handleView(appointment)}>
+                          <Eye className="mr-2 h-4 w-4" />
+                          <span>Ver Detalles</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEdit(appointment)}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          <span>Editar</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => handleDelete(appointment)} className="text-red-600 focus:text-red-600 focus:bg-red-50">
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          <span>Eliminar</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))
@@ -159,6 +235,37 @@ const AppointmentsPage = () => {
         </div>
       </div>
       {view === 'list' ? renderListView() : <AppointmentCalendar />}
+
+      <AppointmentDetailsModal
+        appointment={selectedAppointment}
+        isOpen={isDetailsModalOpen}
+        onClose={() => setIsDetailsModalOpen(false)}
+      />
+
+      <AppointmentEditModal
+        appointment={selectedAppointment}
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onUpdate={() => {
+          fetchAppointments();
+          setIsEditModalOpen(false);
+        }}
+      />
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Esto eliminará permanentemente la cita de los servidores.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Eliminar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
