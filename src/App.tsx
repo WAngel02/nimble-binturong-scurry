@@ -12,10 +12,9 @@ import DashboardPage from "./pages/admin/DashboardPage";
 import DoctoresPage from "./pages/admin/DoctoresPage";
 import PacientesPage from "./pages/admin/PacientesPage";
 import PatientProfilePage from "./pages/admin/PatientProfilePage";
-import ProtectedRoute from "./components/ProtectedRoute";
-import AdminLayout from "./components/admin/AdminLayout";
 import UnderConstruction from "./pages/UnderConstruction";
 import AppointmentsPage from "./pages/admin/AppointmentsPage";
+import AdminRoutes from "./components/admin/AdminRoutes";
 
 const queryClient = new QueryClient();
 
@@ -27,94 +26,28 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
-            {/* Public Routes */}
+            {/* Rutas Públicas */}
             <Route path="/" element={<Index />} />
             <Route path="/agendar-cita" element={<AppointmentPage />} />
-
-            {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
-            <Route 
-              path="/admin/dashboard" 
-              element={
-                <ProtectedRoute allowedRoles={['admin', 'doctor']}>
-                  <AdminLayout>
-                    <DashboardPage />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin/doctores" 
-              element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminLayout>
-                    <DoctoresPage />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin/pacientes" 
-              element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminLayout>
-                    <PacientesPage />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin/pacientes/:id" 
-              element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminLayout>
-                    <PatientProfilePage />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin/appointments" 
-              element={
-                <ProtectedRoute allowedRoles={['admin', 'doctor']}>
-                  <AdminLayout>
-                    <AppointmentsPage />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin/administration" 
-              element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminLayout>
-                    <UnderConstruction />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin/help" 
-              element={
-                <ProtectedRoute allowedRoles={['admin', 'doctor']}>
-                  <AdminLayout>
-                    <UnderConstruction />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin/settings" 
-              element={
-                <ProtectedRoute allowedRoles={['admin', 'doctor']}>
-                  <AdminLayout>
-                    <UnderConstruction />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } 
-            />
 
-            {/* Catch-all */}
+            {/* Rutas para Admin y Doctor */}
+            <Route element={<AdminRoutes allowedRoles={['admin', 'doctor']} />}>
+              <Route path="/admin/dashboard" element={<DashboardPage />} />
+              <Route path="/admin/appointments" element={<AppointmentsPage />} />
+              <Route path="/admin/help" element={<UnderConstruction />} />
+              <Route path="/admin/settings" element={<UnderConstruction />} />
+            </Route>
+
+            {/* Rutas solo para Admin */}
+            <Route element={<AdminRoutes allowedRoles={['admin']} />}>
+              <Route path="/admin/doctores" element={<DoctoresPage />} />
+              <Route path="/admin/pacientes" element={<PacientesPage />} />
+              <Route path="/admin/pacientes/:id" element={<PatientProfilePage />} />
+              <Route path="/admin/administration" element={<UnderConstruction />} />
+            </Route>
+
+            {/* Ruta para página no encontrada */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
