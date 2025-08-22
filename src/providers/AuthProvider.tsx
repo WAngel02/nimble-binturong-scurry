@@ -16,59 +16,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Simplified fetchProfile - relies on DB trigger to create profile
   const fetchProfile = async (userId: string) => {
     try {
-      const { data: profileData, error: profileError } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .maybeSingle();
-      
-      if (profileError) {
-        console.error('Error fetching profile:', profileError);
-        return null;
-      }
-      
-      if (profileData) {
-        return profileData as Profile;
-      }
-      
-      // Si no existe el perfil, crear uno básico
-      console.log('No profile found, creating one...');
-      const { data: newProfile, error: createError } = await supabase
-        .from('profiles')
-        .insert({
-          id: userId,
-          full_name: 'Usuario',
-          role: 'doctor' // rol por defecto
-        })
-        .select()
         .single();
-      
-      if (createError) {
-        console.error('Error creating profile:', createError);
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found, which is ok for a moment
+        console.error('Error fetching profile:', error);
         return null;
       }
       
-      return newProfile as Profile;
+      return data as Profile | null;
     } catch (err) {
-      console.error('Unexpected error handling profile:', err);
+      console.error('Unexpected error in fetchProfile:', err);
       return null;
     }
   };
 
   useEffect(() => {
     setLoading(true);
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session) {
-        const profile = await fetchProfile(session.user.id);
-        setProfile(profile);
+        fetchProfile(session.user.id).then((profile) => {
+          setProfile(profile);
+          setLoading(false);
+        });
       } else {
         setProfile(null);
+        setLoading(false); // Ensure loading is false when logged out
       }
-      setLoading(false);
     });
 
     return () => {

@@ -10,28 +10,22 @@ const HeaderAdmin = () => {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        toast({
-          title: 'Error',
-          description: 'No se pudo cerrar la sesión correctamente.',
-          variant: 'destructive',
-        });
-      } else {
-        toast({
-          title: 'Sesión cerrada',
-          description: 'Has cerrado sesión exitosamente.',
-        });
-        navigate('/admin/login');
-      }
-    } catch (error) {
-      console.error('Error during logout:', error);
+    const { error } = await supabase.auth.signOut();
+    
+    if (error) {
       toast({
         title: 'Error',
-        description: 'Ocurrió un error inesperado al cerrar sesión.',
+        description: 'No se pudo cerrar la sesión: ' + error.message,
         variant: 'destructive',
       });
+    } else {
+      toast({
+        title: 'Sesión cerrada',
+        description: 'Has cerrado sesión exitosamente.',
+      });
+      // Navigate to login page after successful sign out
+      // The state change will also trigger a redirect, but this is more immediate for the user.
+      navigate('/admin/login');
     }
   };
 
