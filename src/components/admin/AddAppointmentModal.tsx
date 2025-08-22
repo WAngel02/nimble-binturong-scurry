@@ -102,9 +102,12 @@ const AddAppointmentModal = ({
 
   useEffect(() => {
     if (selectedSpecialty) {
-      const filtered = doctors.filter(
-        (doc) => doc.specialties?.includes(selectedSpecialty)
-      );
+      const filtered = doctors.filter((doc) => {
+        if (selectedSpecialty === "Consulta General") {
+          return !doc.specialties || doc.specialties.length === 0 || doc.specialties.includes(selectedSpecialty);
+        }
+        return doc.specialties?.includes(selectedSpecialty);
+      });
       setFilteredDoctors(filtered);
     } else {
       setFilteredDoctors([]);
